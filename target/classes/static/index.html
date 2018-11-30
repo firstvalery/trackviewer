@@ -1,5 +1,22 @@
-<html>
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+	<link rel="shortcut icon" href="favicon.ico" />
+	<meta charset="UTF-8">
+	<title>track viewer description</title>
+</head>
+
 <body>
-	<h2>Hello World!</h2>
+	<p>
+	<h2>Описание модуля "Архивный треккинг автотранспорта"</h2>
+	<p>Данный модуль разработан для архивного хранения и предоставления данных о передвижении автотранспорта за запрашиваемый период в формате GPX. XSD схема, описывающая структуру применяемого формата представлена тут.</p>
+	<li><a target="_blank" rel="noopener noreferrer" href="http://sarov.us.to:9902/trackviewer/xsd_scheme">http://sarov.us.to:9902/trackviewer/xsd_scheme</a><br></li>
+	<p>Стандартная схема XSD GPX была расширена в части переопределения типа структур расширенных данных extensionsTypeTrk, extensionsTypeWpt, extensionsTypeSeg для объектов TypeTrk, TypeWpt, TypeSeg соответственно</p>
+	<h2>Описание методов модуля</h2>
+	<ul>
+		<li><a target="_blank" rel="noopener noreferrer" href="http://sarov.us.to:9902/trackviewer/vehicle/show">http://sarov.us.to:9902/trackviewer/vehicle/show</a> Get. Метод для получения списка отслеживаемых транспортных средств<br></li>
+		<li><a target="_blank" rel="noopener noreferrer" href="http://sarov.us.to:9902/trackviewer/track/get?min_ts=0&max_ts=1643432956&vehicle_number=е008ен52">http://sarov.us.to:9902/trackviewer/track/get?min_ts=0&max_ts=1643432956&vehicle_number=е008ен52</a> Get QueryParam. Метод возвращает GPX представление трека. В качестве параметров две метки времени, между которыми строится трек, и гос номер автомобиля  <br></li>	
+	</ul>
 </body>
 </html>

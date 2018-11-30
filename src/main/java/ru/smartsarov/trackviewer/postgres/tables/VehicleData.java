@@ -41,7 +41,7 @@ import ru.smartsarov.trackviewer.postgres.tables.records.VehicleDataRecord;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class VehicleData extends TableImpl<VehicleDataRecord> {
 
-    private static final long serialVersionUID = 818095598;
+    private static final long serialVersionUID = 524635389;
 
     /**
      * The reference instance of <code>public.vehicle_data</code>
@@ -75,6 +75,21 @@ public class VehicleData extends TableImpl<VehicleDataRecord> {
      * The column <code>public.vehicle_data.type</code>.
      */
     public final TableField<VehicleDataRecord, String> TYPE = createField("type", org.jooq.impl.SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.vehicle_data.owner</code>.
+     */
+    public final TableField<VehicleDataRecord, String> OWNER = createField("owner", org.jooq.impl.SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.vehicle_data.model</code>.
+     */
+    public final TableField<VehicleDataRecord, String> MODEL = createField("model", org.jooq.impl.SQLDataType.CLOB, this, "");
+
+    /**
+     * The column <code>public.vehicle_data.description</code>.
+     */
+    public final TableField<VehicleDataRecord, String> DESCRIPTION = createField("description", org.jooq.impl.SQLDataType.CLOB, this, "");
 
     /**
      * Create a <code>public.vehicle_data</code> table reference

@@ -6,6 +6,7 @@ package ru.smartsarov.trackviewer.postgres;
 
 import javax.annotation.Generated;
 
+import ru.smartsarov.trackviewer.postgres.tables.RegionRb;
 import ru.smartsarov.trackviewer.postgres.tables.TrackingData;
 import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
 
@@ -22,6 +23,11 @@ import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
 )
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
+
+    /**
+     * The table <code>public.region_rb</code>.
+     */
+    public static final RegionRb REGION_RB = ru.smartsarov.trackviewer.postgres.tables.RegionRb.REGION_RB;
 
     /**
      * The table <code>public.tracking_data</code>.

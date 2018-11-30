@@ -370,7 +370,7 @@
 				<xsd:documentation> Type (classification) of track. </xsd:documentation>
 			</xsd:annotation>
 		</xsd:element>
-		<xsd:element name="extensions" type="extensionsType" minOccurs="0">
+		<xsd:element name="extensions" type="extensionsTypeTrk" minOccurs="0">
 			<xsd:annotation>
 				<xsd:documentation>
 					You can add extend GPX by adding your own elements from another schema here.
@@ -402,6 +402,20 @@
 			</xsd:any>
 		</xsd:sequence>
 	</xsd:complexType>
+		<xsd:complexType name="extensionsTypeTrk">
+		<xsd:annotation>
+			<xsd:documentation>
+				You can add extend GPX by adding your own elements from another schema here.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element name="distance" type="xsd:int" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation> Distance in meters </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+		</xsd:sequence>
+	</xsd:complexType>
 	<xsd:complexType name="extensionsTypeWpt">
 		<xsd:annotation>
 			<xsd:documentation>
@@ -411,7 +425,7 @@
 		<xsd:sequence>
 			<xsd:element name="velocity" type="xsd:nonNegativeInteger" minOccurs="0" maxOccurs="1">
 				<xsd:annotation>
-					<xsd:documentation> km p h </xsd:documentation>
+					<xsd:documentation> km/h </xsd:documentation>
 				</xsd:annotation>
 			</xsd:element>
 			<xsd:element name="color" type="xsd:nonNegativeInteger" minOccurs="0" maxOccurs="1">
@@ -450,7 +464,7 @@
 			</xsd:element>
 		</xsd:sequence>
 	</xsd:complexType>
-		<xsd:complexType name="extensionsTypeSeg">
+	<xsd:complexType name="extensionsTypeSeg">
 		<xsd:annotation>
 			<xsd:documentation>
 				You can add extend GPX by adding your own elements from another schema here.
@@ -459,7 +473,27 @@
 		<xsd:sequence>
 			<xsd:element name="waiting" type="xsd:long" minOccurs="0" maxOccurs="1">
 				<xsd:annotation>
-					<xsd:documentation> Waiting in Seconds </xsd:documentation>
+					<xsd:documentation> Waiting before driving in this segment (sec) </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="distance" type="xsd:int" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation> Distance in meters of this segment </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="time" type="xsd:int" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation> Travel time </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="velocity" type="xsd:int" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation> Average velocity (km/h) </xsd:documentation>
+				</xsd:annotation>
+			</xsd:element>
+			<xsd:element name="odometer" type="xsd:int" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation> Odometer reading before driving in this segment (meters) </xsd:documentation>
 				</xsd:annotation>
 			</xsd:element>
 		</xsd:sequence>

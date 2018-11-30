@@ -15,6 +15,7 @@ import org.jooq.Sequence;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
 
+import ru.smartsarov.trackviewer.postgres.tables.RegionRb;
 import ru.smartsarov.trackviewer.postgres.tables.TrackingData;
 import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
 
@@ -32,12 +33,17 @@ import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = 1751699678;
+    private static final long serialVersionUID = -275704553;
 
     /**
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * The table <code>public.region_rb</code>.
+     */
+    public final RegionRb REGION_RB = ru.smartsarov.trackviewer.postgres.tables.RegionRb.REGION_RB;
 
     /**
      * The table <code>public.tracking_data</code>.
@@ -74,6 +80,7 @@ public class Public extends SchemaImpl {
 
     private final List<Sequence<?>> getSequences0() {
         return Arrays.<Sequence<?>>asList(
+            Sequences.REGION_RB_ID_SEQ,
             Sequences.TRACKING_DATA_ID_SEQ,
             Sequences.VEHICLE_DAT_ID_SEQ);
     }
@@ -87,6 +94,7 @@ public class Public extends SchemaImpl {
 
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
+            RegionRb.REGION_RB,
             TrackingData.TRACKING_DATA,
             VehicleData.VEHICLE_DATA);
     }

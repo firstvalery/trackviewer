@@ -11,8 +11,10 @@ import org.jooq.Identity;
 import org.jooq.UniqueKey;
 import org.jooq.impl.Internal;
 
+import ru.smartsarov.trackviewer.postgres.tables.RegionRb;
 import ru.smartsarov.trackviewer.postgres.tables.TrackingData;
 import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
+import ru.smartsarov.trackviewer.postgres.tables.records.RegionRbRecord;
 import ru.smartsarov.trackviewer.postgres.tables.records.TrackingDataRecord;
 import ru.smartsarov.trackviewer.postgres.tables.records.VehicleDataRecord;
 
@@ -35,6 +37,7 @@ public class Keys {
     // IDENTITY definitions
     // -------------------------------------------------------------------------
 
+    public static final Identity<RegionRbRecord, Integer> IDENTITY_REGION_RB = Identities0.IDENTITY_REGION_RB;
     public static final Identity<TrackingDataRecord, Long> IDENTITY_TRACKING_DATA = Identities0.IDENTITY_TRACKING_DATA;
     public static final Identity<VehicleDataRecord, Integer> IDENTITY_VEHICLE_DATA = Identities0.IDENTITY_VEHICLE_DATA;
 
@@ -42,6 +45,7 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<RegionRbRecord> REGION_RB_PKEY = UniqueKeys0.REGION_RB_PKEY;
     public static final UniqueKey<TrackingDataRecord> TRACKING_DATA_PKEY = UniqueKeys0.TRACKING_DATA_PKEY;
     public static final UniqueKey<VehicleDataRecord> VEHICLE_DAT_PKEY = UniqueKeys0.VEHICLE_DAT_PKEY;
 
@@ -50,22 +54,26 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     public static final ForeignKey<TrackingDataRecord, VehicleDataRecord> TRACKING_DATA__TRACKING_DATA_VEHICLE_UID_FKEY = ForeignKeys0.TRACKING_DATA__TRACKING_DATA_VEHICLE_UID_FKEY;
+    public static final ForeignKey<TrackingDataRecord, RegionRbRecord> TRACKING_DATA__TRACKING_DATA_REGION_FKEY = ForeignKeys0.TRACKING_DATA__TRACKING_DATA_REGION_FKEY;
 
     // -------------------------------------------------------------------------
     // [#1459] distribute members to avoid static initialisers > 64kb
     // -------------------------------------------------------------------------
 
     private static class Identities0 {
+        public static Identity<RegionRbRecord, Integer> IDENTITY_REGION_RB = Internal.createIdentity(RegionRb.REGION_RB, RegionRb.REGION_RB.ID);
         public static Identity<TrackingDataRecord, Long> IDENTITY_TRACKING_DATA = Internal.createIdentity(TrackingData.TRACKING_DATA, TrackingData.TRACKING_DATA.ID);
         public static Identity<VehicleDataRecord, Integer> IDENTITY_VEHICLE_DATA = Internal.createIdentity(VehicleData.VEHICLE_DATA, VehicleData.VEHICLE_DATA.ID);
     }
 
     private static class UniqueKeys0 {
+        public static final UniqueKey<RegionRbRecord> REGION_RB_PKEY = Internal.createUniqueKey(RegionRb.REGION_RB, "region_rb_pkey", RegionRb.REGION_RB.ID);
         public static final UniqueKey<TrackingDataRecord> TRACKING_DATA_PKEY = Internal.createUniqueKey(TrackingData.TRACKING_DATA, "tracking_data_pkey", TrackingData.TRACKING_DATA.ID);
         public static final UniqueKey<VehicleDataRecord> VEHICLE_DAT_PKEY = Internal.createUniqueKey(VehicleData.VEHICLE_DATA, "vehicle_dat_pkey", VehicleData.VEHICLE_DATA.ID);
     }
 
     private static class ForeignKeys0 {
         public static final ForeignKey<TrackingDataRecord, VehicleDataRecord> TRACKING_DATA__TRACKING_DATA_VEHICLE_UID_FKEY = Internal.createForeignKey(ru.smartsarov.trackviewer.postgres.Keys.VEHICLE_DAT_PKEY, TrackingData.TRACKING_DATA, "tracking_data__tracking_data_vehicle_uid_fkey", TrackingData.TRACKING_DATA.VEHICLE_UID);
+        public static final ForeignKey<TrackingDataRecord, RegionRbRecord> TRACKING_DATA__TRACKING_DATA_REGION_FKEY = Internal.createForeignKey(ru.smartsarov.trackviewer.postgres.Keys.REGION_RB_PKEY, TrackingData.TRACKING_DATA, "tracking_data__tracking_data_region_fkey", TrackingData.TRACKING_DATA.REGION);
     }
 }

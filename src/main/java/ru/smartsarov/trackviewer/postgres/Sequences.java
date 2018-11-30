@@ -24,6 +24,11 @@ import org.jooq.impl.SequenceImpl;
 public class Sequences {
 
     /**
+     * The sequence <code>public.region_rb_id_seq</code>
+     */
+    public static final Sequence<Integer> REGION_RB_ID_SEQ = new SequenceImpl<Integer>("region_rb_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.INTEGER.nullable(false));
+
+    /**
      * The sequence <code>public.tracking_data_id_seq</code>
      */
     public static final Sequence<Long> TRACKING_DATA_ID_SEQ = new SequenceImpl<Long>("tracking_data_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));

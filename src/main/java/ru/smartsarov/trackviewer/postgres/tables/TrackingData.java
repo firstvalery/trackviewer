@@ -43,7 +43,7 @@ import ru.smartsarov.trackviewer.postgres.tables.records.TrackingDataRecord;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class TrackingData extends TableImpl<TrackingDataRecord> {
 
-    private static final long serialVersionUID = -1302054103;
+    private static final long serialVersionUID = -372759340;
 
     /**
      * The reference instance of <code>public.tracking_data</code>
@@ -84,11 +84,6 @@ public class TrackingData extends TableImpl<TrackingDataRecord> {
     public final TableField<TrackingDataRecord, Short> DIRECTION = createField("direction", org.jooq.impl.SQLDataType.SMALLINT, this, "");
 
     /**
-     * The column <code>public.tracking_data.additional</code>.
-     */
-    public final TableField<TrackingDataRecord, String> ADDITIONAL = createField("additional", org.jooq.impl.SQLDataType.CLOB.nullable(false), this, "");
-
-    /**
      * The column <code>public.tracking_data.vehicle_uid</code>.
      */
     public final TableField<TrackingDataRecord, Integer> VEHICLE_UID = createField("vehicle_uid", org.jooq.impl.SQLDataType.INTEGER.nullable(false), this, "");
@@ -97,6 +92,16 @@ public class TrackingData extends TableImpl<TrackingDataRecord> {
      * The column <code>public.tracking_data.id</code>.
      */
     public final TableField<TrackingDataRecord, Long> ID = createField("id", org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(org.jooq.impl.DSL.field("nextval('tracking_data_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
+
+    /**
+     * The column <code>public.tracking_data.region</code>.
+     */
+    public final TableField<TrackingDataRecord, Integer> REGION = createField("region", org.jooq.impl.SQLDataType.INTEGER.nullable(false), this, "");
+
+    /**
+     * The column <code>public.tracking_data.odometer</code>.
+     */
+    public final TableField<TrackingDataRecord, Integer> ODOMETER = createField("odometer", org.jooq.impl.SQLDataType.INTEGER, this, "");
 
     /**
      * Create a <code>public.tracking_data</code> table reference
@@ -144,7 +149,7 @@ public class TrackingData extends TableImpl<TrackingDataRecord> {
      */
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.LOG_FOREIGN_KEY, Indexes.TRACKING_DATA_PKEY);
+        return Arrays.<Index>asList(Indexes.LOG_FOREIGN_KEY, Indexes.REGION_FKEY, Indexes.TRACKING_DATA_PKEY);
     }
 
     /**
@@ -176,11 +181,15 @@ public class TrackingData extends TableImpl<TrackingDataRecord> {
      */
     @Override
     public List<ForeignKey<TrackingDataRecord, ?>> getReferences() {
-        return Arrays.<ForeignKey<TrackingDataRecord, ?>>asList(Keys.TRACKING_DATA__TRACKING_DATA_VEHICLE_UID_FKEY);
+        return Arrays.<ForeignKey<TrackingDataRecord, ?>>asList(Keys.TRACKING_DATA__TRACKING_DATA_VEHICLE_UID_FKEY, Keys.TRACKING_DATA__TRACKING_DATA_REGION_FKEY);
     }
 
     public VehicleData vehicleData() {
         return new VehicleData(this, Keys.TRACKING_DATA__TRACKING_DATA_VEHICLE_UID_FKEY);
+    }
+
+    public RegionRb regionRb() {
+        return new RegionRb(this, Keys.TRACKING_DATA__TRACKING_DATA_REGION_FKEY);
     }
 
     /**
