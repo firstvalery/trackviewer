@@ -18,9 +18,6 @@ public class JsonTrack {
     @SerializedName("segments")
     @Expose
     private List<Segment> segments = null;
-    @SerializedName("totalWaiting")
-    @Expose
-    private Integer totalWaiting;
     @SerializedName("waitTrackPoints")
     @Expose
     private List<WaitTrackPoint> waitTrackPoints = null;
@@ -33,8 +30,7 @@ public class JsonTrack {
         this.vehicle = vehicle;
     }
 
-
-	public Integer getDistance() {
+    public Integer getDistance() {
 		return distance;
 	}
 
@@ -57,12 +53,4 @@ public class JsonTrack {
 	public void setWaitTrackPoints(List<WaitTrackPoint> waitTrackPoints) {
 		this.waitTrackPoints = waitTrackPoints;
 	}
-    public Integer getTotalWaiting() {
-		return totalWaiting;
-	}
-
-	public void setTotalWaiting(Integer totalWaiting) {
-		this.totalWaiting = totalWaiting;
-	}
-
 }

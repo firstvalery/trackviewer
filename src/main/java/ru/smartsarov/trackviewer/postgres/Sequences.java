@@ -24,16 +24,6 @@ import org.jooq.impl.SequenceImpl;
 public class Sequences {
 
     /**
-     * The sequence <code>public.additional_id_seq</code>
-     */
-    public static final Sequence<Integer> ADDITIONAL_ID_SEQ = new SequenceImpl<Integer>("additional_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.INTEGER.nullable(false));
-
-    /**
-     * The sequence <code>public.day_report_id_seq</code>
-     */
-    public static final Sequence<Integer> DAY_REPORT_ID_SEQ = new SequenceImpl<Integer>("day_report_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.INTEGER.nullable(false));
-
-    /**
      * The sequence <code>public.region_rb_id_seq</code>
      */
     public static final Sequence<Integer> REGION_RB_ID_SEQ = new SequenceImpl<Integer>("region_rb_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.INTEGER.nullable(false));

@@ -6,8 +6,6 @@ package ru.smartsarov.trackviewer.postgres;
 
 import javax.annotation.Generated;
 
-import ru.smartsarov.trackviewer.postgres.tables.Additional;
-import ru.smartsarov.trackviewer.postgres.tables.DayReport;
 import ru.smartsarov.trackviewer.postgres.tables.RegionRb;
 import ru.smartsarov.trackviewer.postgres.tables.TrackingData;
 import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
@@ -25,16 +23,6 @@ import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
 )
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Tables {
-
-    /**
-     * The table <code>public.additional</code>.
-     */
-    public static final Additional ADDITIONAL = ru.smartsarov.trackviewer.postgres.tables.Additional.ADDITIONAL;
-
-    /**
-     * The table <code>public.day_report</code>.
-     */
-    public static final DayReport DAY_REPORT = ru.smartsarov.trackviewer.postgres.tables.DayReport.DAY_REPORT;
 
     /**
      * The table <code>public.region_rb</code>.
