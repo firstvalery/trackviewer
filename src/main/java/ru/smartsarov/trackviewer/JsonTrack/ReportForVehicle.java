@@ -20,7 +20,11 @@ public class ReportForVehicle {
     @SerializedName("distance")
     @Expose
     private Integer distance;
-    public Integer getDistance() {
+    @SerializedName("totalWaiting")
+    @Expose
+    private Integer totalWaiting;
+
+	public Integer getDistance() {
 		return distance;
 	}
 	public void setDistance(Integer distance) {
@@ -43,10 +47,11 @@ public class ReportForVehicle {
 	public void setWaitTrackPoints(List<WaitTrackPoint> waitTrackPoints) {
 		this.waitTrackPoints = waitTrackPoints;
 	}
-	public ReportForVehicle(Vehicle vehicle, Integer distance, List<WaitTrackPoint> waitTrackPoints) {
+	public ReportForVehicle(Vehicle vehicle, Integer distance, Integer totalWaiting, List<WaitTrackPoint> waitTrackPoints) {
 		this.vehicle = vehicle;
 		this.distance = distance;
 		this.waitTrackPoints = waitTrackPoints;
+		this.totalWaiting = totalWaiting;
 	}
 	public long getTsFrom() {
 		return tsFrom;
@@ -59,5 +64,11 @@ public class ReportForVehicle {
 	}
 	public void setTsTo(Vehicle tsTo) {
 		this.tsTo = tsTo;
+	}
+    public Integer getTotalWaiting() {
+		return totalWaiting;
+	}
+	public void setTotalWaiting(Integer totalWaiting) {
+		this.totalWaiting = totalWaiting;
 	}
 }

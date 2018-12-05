@@ -10,6 +10,8 @@ import org.jooq.Index;
 import org.jooq.OrderField;
 import org.jooq.impl.Internal;
 
+import ru.smartsarov.trackviewer.postgres.tables.Additional;
+import ru.smartsarov.trackviewer.postgres.tables.DayReport;
 import ru.smartsarov.trackviewer.postgres.tables.RegionRb;
 import ru.smartsarov.trackviewer.postgres.tables.TrackingData;
 import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
@@ -32,21 +34,29 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index ADDITIONAL_PKEY = Indexes0.ADDITIONAL_PKEY;
+    public static final Index DAY_REPORT_PKEY = Indexes0.DAY_REPORT_PKEY;
     public static final Index REGION_RB_PKEY = Indexes0.REGION_RB_PKEY;
+    public static final Index ADDITIONAL_FKEY = Indexes0.ADDITIONAL_FKEY;
     public static final Index LOG_FOREIGN_KEY = Indexes0.LOG_FOREIGN_KEY;
     public static final Index REGION_FKEY = Indexes0.REGION_FKEY;
     public static final Index TRACKING_DATA_PKEY = Indexes0.TRACKING_DATA_PKEY;
     public static final Index VEHICLE_DAT_PKEY = Indexes0.VEHICLE_DAT_PKEY;
+    public static final Index VEHICLE_DATA_NUMBER_KEY = Indexes0.VEHICLE_DATA_NUMBER_KEY;
 
     // -------------------------------------------------------------------------
     // [#1459] distribute members to avoid static initialisers > 64kb
     // -------------------------------------------------------------------------
 
     private static class Indexes0 {
+        public static Index ADDITIONAL_PKEY = Internal.createIndex("additional_pkey", Additional.ADDITIONAL, new OrderField[] { Additional.ADDITIONAL.ID }, true);
+        public static Index DAY_REPORT_PKEY = Internal.createIndex("day_report_pkey", DayReport.DAY_REPORT, new OrderField[] { DayReport.DAY_REPORT.ID }, true);
         public static Index REGION_RB_PKEY = Internal.createIndex("region_rb_pkey", RegionRb.REGION_RB, new OrderField[] { RegionRb.REGION_RB.ID }, true);
+        public static Index ADDITIONAL_FKEY = Internal.createIndex("additional_fkey", TrackingData.TRACKING_DATA, new OrderField[] { TrackingData.TRACKING_DATA.ADDITIONAL }, false);
         public static Index LOG_FOREIGN_KEY = Internal.createIndex("log_foreign_key", TrackingData.TRACKING_DATA, new OrderField[] { TrackingData.TRACKING_DATA.VEHICLE_UID }, false);
         public static Index REGION_FKEY = Internal.createIndex("region_fkey", TrackingData.TRACKING_DATA, new OrderField[] { TrackingData.TRACKING_DATA.REGION }, false);
         public static Index TRACKING_DATA_PKEY = Internal.createIndex("tracking_data_pkey", TrackingData.TRACKING_DATA, new OrderField[] { TrackingData.TRACKING_DATA.ID }, true);
         public static Index VEHICLE_DAT_PKEY = Internal.createIndex("vehicle_dat_pkey", VehicleData.VEHICLE_DATA, new OrderField[] { VehicleData.VEHICLE_DATA.ID }, true);
+        public static Index VEHICLE_DATA_NUMBER_KEY = Internal.createIndex("vehicle_data_number_key", VehicleData.VEHICLE_DATA, new OrderField[] { VehicleData.VEHICLE_DATA.NUMBER }, true);
     }
 }

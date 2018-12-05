@@ -41,7 +41,7 @@ import ru.smartsarov.trackviewer.postgres.tables.records.VehicleDataRecord;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class VehicleData extends TableImpl<VehicleDataRecord> {
 
-    private static final long serialVersionUID = 524635389;
+    private static final long serialVersionUID = -1822959230;
 
     /**
      * The reference instance of <code>public.vehicle_data</code>
@@ -62,34 +62,9 @@ public class VehicleData extends TableImpl<VehicleDataRecord> {
     public final TableField<VehicleDataRecord, Integer> ID = createField("id", org.jooq.impl.SQLDataType.INTEGER.nullable(false).defaultValue(org.jooq.impl.DSL.field("nextval('vehicle_dat_id_seq'::regclass)", org.jooq.impl.SQLDataType.INTEGER)), this, "");
 
     /**
-     * The column <code>public.vehicle_data.uid</code>.
-     */
-    public final TableField<VehicleDataRecord, String> UID = createField("uid", org.jooq.impl.SQLDataType.CLOB, this, "");
-
-    /**
      * The column <code>public.vehicle_data.number</code>.
      */
     public final TableField<VehicleDataRecord, String> NUMBER = createField("number", org.jooq.impl.SQLDataType.CLOB, this, "");
-
-    /**
-     * The column <code>public.vehicle_data.type</code>.
-     */
-    public final TableField<VehicleDataRecord, String> TYPE = createField("type", org.jooq.impl.SQLDataType.CLOB, this, "");
-
-    /**
-     * The column <code>public.vehicle_data.owner</code>.
-     */
-    public final TableField<VehicleDataRecord, String> OWNER = createField("owner", org.jooq.impl.SQLDataType.CLOB, this, "");
-
-    /**
-     * The column <code>public.vehicle_data.model</code>.
-     */
-    public final TableField<VehicleDataRecord, String> MODEL = createField("model", org.jooq.impl.SQLDataType.CLOB, this, "");
-
-    /**
-     * The column <code>public.vehicle_data.description</code>.
-     */
-    public final TableField<VehicleDataRecord, String> DESCRIPTION = createField("description", org.jooq.impl.SQLDataType.CLOB, this, "");
 
     /**
      * Create a <code>public.vehicle_data</code> table reference
@@ -137,7 +112,7 @@ public class VehicleData extends TableImpl<VehicleDataRecord> {
      */
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.VEHICLE_DAT_PKEY);
+        return Arrays.<Index>asList(Indexes.VEHICLE_DAT_PKEY, Indexes.VEHICLE_DATA_NUMBER_KEY);
     }
 
     /**
@@ -161,7 +136,7 @@ public class VehicleData extends TableImpl<VehicleDataRecord> {
      */
     @Override
     public List<UniqueKey<VehicleDataRecord>> getKeys() {
-        return Arrays.<UniqueKey<VehicleDataRecord>>asList(Keys.VEHICLE_DAT_PKEY);
+        return Arrays.<UniqueKey<VehicleDataRecord>>asList(Keys.VEHICLE_DAT_PKEY, Keys.VEHICLE_DATA_NUMBER_KEY);
     }
 
     /**
