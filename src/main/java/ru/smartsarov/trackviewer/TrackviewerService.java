@@ -91,7 +91,22 @@ public class TrackviewerService
     		@QueryParam ("vehicle_number") String vehicleNumber) throws ClassNotFoundException
     {
 		try {
-				return Response.status(Response.Status.OK).entity(Trackviewer.jsonTrackData(min_ts, max_ts, vehicleNumber.toLowerCase())).build();
+				return Response.status(Response.Status.OK).entity(Trackviewer.jsonTrackData(min_ts, max_ts, vehicleNumber==null?null:vehicleNumber.toLowerCase())).build();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			return Response.status(Response.Status.OK).entity(e.toString()).build();
+		}
+    }
+	
+	@GET
+	@Path("/track/timeline")
+	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
+    public Response getJsonDay(
+    		@QueryParam ("ts") long ts,
+    		@QueryParam ("type") String type) throws ClassNotFoundException
+    {
+		try {
+				return Response.status(Response.Status.OK).entity(Trackviewer.getStatistic24HourJson(ts, type)).build();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			return Response.status(Response.Status.OK).entity(e.toString()).build();
