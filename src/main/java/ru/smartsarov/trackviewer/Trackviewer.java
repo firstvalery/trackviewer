@@ -180,7 +180,7 @@ public class Trackviewer {
 				});
 				//Inserting new records in table VehicleData	 
 				//TODO
-				// Пересмотреть структуру таблиц, добавление нового транспортного средства
+				// Пересмотреть добавление нового транспортного средства
 				if(!vehicleDataRecordSet.isEmpty()) {		    	 
 				    vehicleDataRecordSet.stream().forEach(j->{	  	
 				    	if (numberSet.contains(j.getNumber())) {//update record		
