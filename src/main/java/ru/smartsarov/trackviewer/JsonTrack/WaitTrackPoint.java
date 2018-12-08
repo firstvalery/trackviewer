@@ -10,7 +10,7 @@ public class WaitTrackPoint {
     
 	@SerializedName("waiting")
     @Expose
-    private long waiting;
+    private int waiting;
 	
 	public TrackPoint getTrackPoint() {
 		return trackPoint;
@@ -18,13 +18,13 @@ public class WaitTrackPoint {
 	public void setTrackPoint(TrackPoint trackPoint) {
 		this.trackPoint = trackPoint;
 	}
-	public long getWaiting() {
+	public int getWaiting() {
 		return waiting;
 	}
-	public void setWaiting(long waiting) {
+	public void setWaiting(int waiting) {
 		this.waiting = waiting;
 	}
-	public WaitTrackPoint(TrackPoint trackPoint, long waiting) {
+	public WaitTrackPoint(TrackPoint trackPoint, int waiting) {
 		this.trackPoint = trackPoint;
 		this.waiting = waiting;
 	}

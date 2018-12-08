@@ -37,18 +37,6 @@ public class TrackviewerService
     	return Response.status(Response.Status.OK).entity(is).build();
     }
 	
-	@GET
-	@Path("/log_table/insert")
-	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
-    public Response insertNewTable()
-    {
-		try {
-				return Response.status(Response.Status.OK).entity(Trackviewer.InsertFileInto("D:/vehiclesspecial.csv")).build();
-		} catch (ClassNotFoundException | SQLException | DataAccessException | IOException  e) {
-			// TODO Auto-generated catch block
-			return Response.status(Response.Status.OK).entity(e.toString()).build();
-		}
-    }
 	
 	@GET
 	@Path("/vehicle/show")
@@ -65,22 +53,6 @@ public class TrackviewerService
 
     }
 	
-	
-	@GET
-	@Path("/track/get")
-	@Produces(MediaType.TEXT_XML + ";charset=UTF-8")
-    public Response getTrack(
-    		@QueryParam ("min_ts") long min_ts,
-    		@QueryParam ("max_ts") long max_ts,
-    		@QueryParam ("vehicle_number") String vehicleNumber) throws ClassNotFoundException
-    {
-		try {
-				return Response.status(Response.Status.OK).entity(Trackviewer.marshalTrackData(min_ts, max_ts, vehicleNumber.toLowerCase())).build();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			return Response.status(Response.Status.OK).entity(e.toString()).build();
-		}
-    }
 	
 	@GET
 	@Path("/track/get_json")
@@ -127,6 +99,38 @@ public class TrackviewerService
 				return Response.status(Response.Status.OK).entity(e.toString()).build();
 			}
 	}
+	
+	
+	@GET
+	@Path("/track/timeline/get_hourly")
+	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
+    public Response getJsonHour(
+    		@QueryParam ("ts") long ts) throws ClassNotFoundException
+    {
+		try {
+			Trackviewer.createHourlyReport(ts*1000);
+				return Response.status(Response.Status.OK).entity("Ok").build();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			return Response.status(Response.Status.OK).entity(e.toString()).build();
+		}
+    }
+	@GET
+	@Path("/track/timeline/get_week")
+	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
+    public Response getJsonWeek(
+    		@QueryParam ("ts") long ts,
+    		@QueryParam ("type") String type) throws ClassNotFoundException
+    {
+		try {
+			Trackviewer.createHourlyReport(ts*1000);
+				return Response.status(Response.Status.OK).entity(Trackviewer.getWeekReportByType(ts, type)).build();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			return Response.status(Response.Status.OK).entity(e.toString()).build();
+		}
+    }
+	
 	
 	
 	

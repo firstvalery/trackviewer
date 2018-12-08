@@ -8,8 +8,7 @@ import com.google.gson.annotations.SerializedName;
 import ru.smartsarov.trackviewer.jsoninsert.Vehicle;
 
 public class JsonTrack {
-
-    @SerializedName("vehicle")
+	@SerializedName("vehicle")
     @Expose
     private Vehicle vehicle;
     @SerializedName("distance")
@@ -53,4 +52,5 @@ public class JsonTrack {
 	public void setWaitTrackPoints(List<WaitTrackPoint> waitTrackPoints) {
 		this.waitTrackPoints = waitTrackPoints;
 	}
+
 }

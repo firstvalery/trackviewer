@@ -15,9 +15,11 @@ import org.jooq.Sequence;
 import org.jooq.Table;
 import org.jooq.impl.SchemaImpl;
 
+import ru.smartsarov.trackviewer.postgres.tables.HourReport;
 import ru.smartsarov.trackviewer.postgres.tables.RegionRb;
 import ru.smartsarov.trackviewer.postgres.tables.TrackingData;
 import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
+import ru.smartsarov.trackviewer.postgres.tables.WaitPoints;
 
 
 /**
@@ -33,12 +35,17 @@ import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Public extends SchemaImpl {
 
-    private static final long serialVersionUID = -275704553;
+    private static final long serialVersionUID = -1084212413;
 
     /**
      * The reference instance of <code>public</code>
      */
     public static final Public PUBLIC = new Public();
+
+    /**
+     * The table <code>public.hour_report</code>.
+     */
+    public final HourReport HOUR_REPORT = ru.smartsarov.trackviewer.postgres.tables.HourReport.HOUR_REPORT;
 
     /**
      * The table <code>public.region_rb</code>.
@@ -54,6 +61,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.vehicle_data</code>.
      */
     public final VehicleData VEHICLE_DATA = ru.smartsarov.trackviewer.postgres.tables.VehicleData.VEHICLE_DATA;
+
+    /**
+     * The table <code>public.wait_points</code>.
+     */
+    public final WaitPoints WAIT_POINTS = ru.smartsarov.trackviewer.postgres.tables.WaitPoints.WAIT_POINTS;
 
     /**
      * No further instances allowed
@@ -80,9 +92,11 @@ public class Public extends SchemaImpl {
 
     private final List<Sequence<?>> getSequences0() {
         return Arrays.<Sequence<?>>asList(
+            Sequences.HOUR_REPORT_ID_SEQ,
             Sequences.REGION_RB_ID_SEQ,
             Sequences.TRACKING_DATA_ID_SEQ,
-            Sequences.VEHICLE_DAT_ID_SEQ);
+            Sequences.VEHICLE_DAT_ID_SEQ,
+            Sequences.WAIT_POINTS_ID_SEQ);
     }
 
     @Override
@@ -94,8 +108,10 @@ public class Public extends SchemaImpl {
 
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
+            HourReport.HOUR_REPORT,
             RegionRb.REGION_RB,
             TrackingData.TRACKING_DATA,
-            VehicleData.VEHICLE_DATA);
+            VehicleData.VEHICLE_DATA,
+            WaitPoints.WAIT_POINTS);
     }
 }
