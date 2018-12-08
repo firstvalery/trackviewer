@@ -526,7 +526,10 @@ public class Trackviewer {
 	 */
 	private static JsonTrack dataAnalasing(List<Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String>> result) {
 		JsonTrack jt = new JsonTrack();
-		boolean odometerFlag;
+		int filterVelocity = Integer.valueOf(Props.get().getProperty("filterVelocity", "50"));
+		int waitPointDuration = Integer.valueOf(Props.get().getProperty("suspense","300"));
+		boolean odometerFlag=false;
+		double tmpOdometer=0.0;
 		if(!result.isEmpty()) {
 			jt.setSegments(new ArrayList<Segment>());
 			jt.setWaitTrackPoints(new ArrayList<WaitTrackPoint>());
@@ -547,10 +550,10 @@ public class Trackviewer {
 	    
 	    Double odometer=0.0;
 	    //Building of track segments     	
-	   for (int i=0; i<result.size(); i++) {
+	   for (int i=0; i < result.size(); i++) {
 	       if (!result.get(i).get(TRACKING_DATA.LATITUDE).equals( tmpPt.getLatitude()) ||
 	         				!result.get(i).get(TRACKING_DATA.LONGITUDE).equals(tmpPt.getLongitude())) {// check for new coordinates
-	    	   
+
 	    	   //Creating wpt by result[i]
 	    	   TrackPoint pt = new TrackPoint(result.get(i).get(TRACKING_DATA.VELOCITY),
 	    			   result.get(i).get(TRACKING_DATA.DIRECTION),
@@ -558,40 +561,53 @@ public class Trackviewer {
 	    			   result.get(i).get(TRACKING_DATA.LATITUDE),
 	    			   result.get(i).get(TRACKING_DATA.TIMESTAMP).getTime()/1000,
 	    			   (short)0);  
+	    	   
+	    	   long delta = pt.getTimestamp() - tmpPt.getTimestamp();
+
+	    	   //filtering unreal points 
+	         	if (i > 0) {
+	         			tmpOdometer = getDistance(tmpPt, pt);		
+		         		if(delta==0 || tmpOdometer/delta > filterVelocity) {
+		         			continue; // skip iteration
+		         	}
+	         	}else {
+	         		tmpOdometer = 0.0;
+	         	}
+
+	         	if (odometerFlag ) {// use vehicle odometer value
+	         		pt.setOdometer(Double.valueOf(result.get(i).getValue(TRACKING_DATA.ODOMETER)));
+	         	}else {//use calculated value
+	         		odometer += tmpOdometer;
+	         		pt.setOdometer(Double.valueOf(odometer));
+	         	}
+	         	
 	         	//creating new segment
-	         	long delta = 0;
-	         	if((delta = (pt.getTimestamp() - tmpPt.getTimestamp()))> Integer.valueOf(Props.get().getProperty("suspense","300"))){//suspense time constant        		
+	         	
+	         	if(delta > waitPointDuration){//suspense time constant        		
 	         		segmentIndex++;     			
 	         		jt.getSegments().add(new Segment());//new segment building
 	         		jt.getSegments().get(segmentIndex-1).setTrackPoints(new ArrayList<TrackPoint>());//new point list in it  	
 	         		
 	         		if (segmentIndex>1) {// from second segment begins to set waiting in sec
 	         			jt.getSegments().get(segmentIndex-1).setWaiting(delta);
-	         			jt.getWaitTrackPoints().add(new WaitTrackPoint(tmpPt, delta));
+	         			jt.getWaitTrackPoints().add(new WaitTrackPoint(tmpPt, Long.valueOf(delta).intValue()));
 	         		}
-	         	}
-	         	if(odometerFlag ) {//use built in odometer
-	         		pt.setOdometer(Double.valueOf(result.get(i).getValue(TRACKING_DATA.ODOMETER)));
-	         	}
-	         	else {//Calculating odometer by GeoCoordinates
-	         		odometer+= i > 0 ? getDistance(tmpPt, pt):0.0;
-	         		pt.setOdometer(Double.valueOf(odometer));
 	         	}
 	         	jt.getSegments().get(segmentIndex-1).getTrackPoints().add(pt);
 	         	tmpPt = pt;
 	         }
 	    }
-	   
 	   jt.getSegments().stream().forEach(seg->{
 		   Double distance = 0.0;
 		   distance = seg.getTrackPoints().get(seg.getTrackPoints().size()-1).getOdometer() - seg.getTrackPoints().get(0).getOdometer();
 		   seg.setDistance(Double.valueOf(distance).intValue());
+		   
 		   if (seg.getTrackPoints().size()>1) {
 			   float time = seg.getTrackPoints().get(seg.getTrackPoints().size()-1).getTimestamp()-seg.getTrackPoints().get(0).getTimestamp();
 			   seg.setAvaerage(distance.floatValue()/time*3.6F);
-		   }else seg.setAvaerage(0.0F);
-		   
+		   }else seg.setAvaerage(0.0F);   
 	   });
+   
 	   jt.setDistance(Double.valueOf(jt.getSegments().get(jt.getSegments().size()-1).getTrackPoints().get(jt.getSegments().get(jt.getSegments().size()-1).getTrackPoints().size()-1).getOdometer()-
 			   			jt.getSegments().get(0).getTrackPoints().get(0).getOdometer()).intValue());
 	  
