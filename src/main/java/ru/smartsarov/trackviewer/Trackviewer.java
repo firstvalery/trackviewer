@@ -566,9 +566,9 @@ public class Trackviewer {
 
 	    	   //filtering unreal points 
 	         	if (i > 0) {
-	         			tmpOdometer = getDistance(tmpPt, pt);		
-		         		if(delta==0 || tmpOdometer/delta > filterVelocity) {
-		         			continue; // skip iteration
+	         		tmpOdometer = getDistance(tmpPt, pt);		
+		         	if(delta==0 || tmpOdometer/delta > filterVelocity) {
+		         		continue; // skip iteration
 		         	}
 	         	}else {
 	         		tmpOdometer = 0.0;
