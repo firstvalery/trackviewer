@@ -78,7 +78,7 @@ public class TrackviewerService
     		@QueryParam ("type") String type) throws ClassNotFoundException
     {
 		try {
-				return Response.status(Response.Status.OK).entity(Trackviewer.getStatistic24HourJson(ts, type)).build();
+				return Response.status(Response.Status.OK).entity(Trackviewer.getDayReportByType(ts, type)).build();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			return Response.status(Response.Status.OK).entity(e.toString()).build();
@@ -123,16 +123,11 @@ public class TrackviewerService
     		@QueryParam ("type") String type) throws ClassNotFoundException
     {
 		try {
-			Trackviewer.createHourlyReport(ts*1000);
 				return Response.status(Response.Status.OK).entity(Trackviewer.getWeekReportByType(ts, type)).build();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			return Response.status(Response.Status.OK).entity(e.toString()).build();
 		}
     }
-	
-	
-	
-	
 	
 }
