@@ -21,8 +21,10 @@ import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 
+import ru.samrtsarov.yandexgeo.GetGeo;
 import ru.smartsarov.trackviewer.JsonTrack.JsonTrack;
 import ru.smartsarov.trackviewer.JsonTrack.ReportForVehicle;
+import ru.smartsarov.trackviewer.JsonTrack.TrackPoint;
 
 public class PdfGenerator {
 
@@ -247,20 +249,30 @@ public class PdfGenerator {
 					table.addCell(cell);
 					//Время начала движения
 					cell.setPhrase(new Phrase(ZonedDateTime.ofInstant(Instant.ofEpochSecond(wp.getTrackPoint().getTimestamp() + wp.getWaiting()), ZoneId.systemDefault())
-							.format(DateTimeFormatter.ofPattern("с HH:mm   dd.MM.yyyy ")).toString(), font));
+							.format(DateTimeFormatter.ofPattern("по HH:mm   dd.MM.yyyy ")).toString(), font));
 					table.addCell(cell);
 					//Продолжительность
 					cell.setPhrase(new Phrase(secToHHMMSS(wp.getWaiting()), font));
 					table.addCell(cell);
 					
 					
-					cell.setPhrase(new Phrase("Адрес", font));
+					
+					cell.setPhrase(new Phrase(GetGeo.getAdress(trackPointToGeo(wp.getTrackPoint())), font));
 					table.addCell(cell);
 					
 					cell.setPhrase(new Phrase("Расход",font));
 					table.addCell(cell);
 				});
 	}
+	
+	/**
+	 * TrackPoint to String for geocoder
+	 */
+	private static String trackPointToGeo(TrackPoint tp) {
+		return tp.getLongitude().toString()+","+tp.getLatitude().toString();
+	}
+	
+	
 
 	
 	/**
