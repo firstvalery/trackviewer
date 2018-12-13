@@ -11,7 +11,7 @@ public class ControlJob implements Job{
 		@Override
 		public void execute(JobExecutionContext context) throws JobExecutionException {
 					try {
-						Trackviewer.createHourlyReport(Instant.now().toEpochMilli());
+						Trackviewer.createHourlyReport(Instant.now().getEpochSecond());
 					} catch (ClassNotFoundException | SQLException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

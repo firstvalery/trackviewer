@@ -21,6 +21,9 @@ public class JsonTrack {
     @Expose
     private List<WaitTrackPoint> waitTrackPoints = null;
     
+    private long tsFrom;
+    private long tsTo;
+    
     public Vehicle getVehicle() {
         return vehicle;
     }
@@ -51,6 +54,22 @@ public class JsonTrack {
 
 	public void setWaitTrackPoints(List<WaitTrackPoint> waitTrackPoints) {
 		this.waitTrackPoints = waitTrackPoints;
+	}
+
+	public long getTsFrom() {
+		return tsFrom;
+	}
+
+	public void setTsFrom(long tsFrom) {
+		this.tsFrom = tsFrom;
+	}
+
+	public long getTsTo() {
+		return tsTo;
+	}
+
+	public void setTsTo(long tsTo) {
+		this.tsTo = tsTo;
 	}
 
 }

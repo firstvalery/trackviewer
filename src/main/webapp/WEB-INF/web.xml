@@ -19,7 +19,7 @@
     <servlet-name>trackviewer</servlet-name>
     <url-pattern>/*</url-pattern>
   </servlet-mapping>
-  <!-- listener>
+  <listener>
 		<listener-class>ru.smartsarov.trackviewer.ThreadListener</listener-class>
-  </listener-->
+  </listener>
 </web-app>
