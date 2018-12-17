@@ -24,6 +24,11 @@ import org.jooq.impl.SequenceImpl;
 public class Sequences {
 
     /**
+     * The sequence <code>public.hour_report_id_seq</code>
+     */
+    public static final Sequence<Long> HOUR_REPORT_ID_SEQ = new SequenceImpl<Long>("hour_report_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
+
+    /**
      * The sequence <code>public.region_rb_id_seq</code>
      */
     public static final Sequence<Integer> REGION_RB_ID_SEQ = new SequenceImpl<Integer>("region_rb_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.INTEGER.nullable(false));
@@ -37,4 +42,9 @@ public class Sequences {
      * The sequence <code>public.vehicle_dat_id_seq</code>
      */
     public static final Sequence<Short> VEHICLE_DAT_ID_SEQ = new SequenceImpl<Short>("vehicle_dat_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.SMALLINT.nullable(false));
+
+    /**
+     * The sequence <code>public.wait_points_id_seq</code>
+     */
+    public static final Sequence<Long> WAIT_POINTS_ID_SEQ = new SequenceImpl<Long>("wait_points_id_seq", Public.PUBLIC, org.jooq.impl.SQLDataType.BIGINT.nullable(false));
 }

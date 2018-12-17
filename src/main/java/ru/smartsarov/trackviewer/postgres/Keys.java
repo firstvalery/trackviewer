@@ -11,12 +11,16 @@ import org.jooq.Identity;
 import org.jooq.UniqueKey;
 import org.jooq.impl.Internal;
 
+import ru.smartsarov.trackviewer.postgres.tables.HourReport;
 import ru.smartsarov.trackviewer.postgres.tables.RegionRb;
 import ru.smartsarov.trackviewer.postgres.tables.TrackingData;
 import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
+import ru.smartsarov.trackviewer.postgres.tables.WaitPoints;
+import ru.smartsarov.trackviewer.postgres.tables.records.HourReportRecord;
 import ru.smartsarov.trackviewer.postgres.tables.records.RegionRbRecord;
 import ru.smartsarov.trackviewer.postgres.tables.records.TrackingDataRecord;
 import ru.smartsarov.trackviewer.postgres.tables.records.VehicleDataRecord;
+import ru.smartsarov.trackviewer.postgres.tables.records.WaitPointsRecord;
 
 
 /**
@@ -37,17 +41,21 @@ public class Keys {
     // IDENTITY definitions
     // -------------------------------------------------------------------------
 
+    public static final Identity<HourReportRecord, Long> IDENTITY_HOUR_REPORT = Identities0.IDENTITY_HOUR_REPORT;
     public static final Identity<RegionRbRecord, Integer> IDENTITY_REGION_RB = Identities0.IDENTITY_REGION_RB;
     public static final Identity<TrackingDataRecord, Long> IDENTITY_TRACKING_DATA = Identities0.IDENTITY_TRACKING_DATA;
     public static final Identity<VehicleDataRecord, Integer> IDENTITY_VEHICLE_DATA = Identities0.IDENTITY_VEHICLE_DATA;
+    public static final Identity<WaitPointsRecord, Long> IDENTITY_WAIT_POINTS = Identities0.IDENTITY_WAIT_POINTS;
 
     // -------------------------------------------------------------------------
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<HourReportRecord> HOUR_REPORT_PKEY = UniqueKeys0.HOUR_REPORT_PKEY;
     public static final UniqueKey<RegionRbRecord> REGION_RB_PKEY = UniqueKeys0.REGION_RB_PKEY;
     public static final UniqueKey<TrackingDataRecord> TRACKING_DATA_PKEY = UniqueKeys0.TRACKING_DATA_PKEY;
     public static final UniqueKey<VehicleDataRecord> VEHICLE_DAT_PKEY = UniqueKeys0.VEHICLE_DAT_PKEY;
+    public static final UniqueKey<WaitPointsRecord> WAIT_POINTS_PKEY = UniqueKeys0.WAIT_POINTS_PKEY;
 
     // -------------------------------------------------------------------------
     // FOREIGN KEY definitions
@@ -61,15 +69,19 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     private static class Identities0 {
+        public static Identity<HourReportRecord, Long> IDENTITY_HOUR_REPORT = Internal.createIdentity(HourReport.HOUR_REPORT, HourReport.HOUR_REPORT.ID);
         public static Identity<RegionRbRecord, Integer> IDENTITY_REGION_RB = Internal.createIdentity(RegionRb.REGION_RB, RegionRb.REGION_RB.ID);
         public static Identity<TrackingDataRecord, Long> IDENTITY_TRACKING_DATA = Internal.createIdentity(TrackingData.TRACKING_DATA, TrackingData.TRACKING_DATA.ID);
         public static Identity<VehicleDataRecord, Integer> IDENTITY_VEHICLE_DATA = Internal.createIdentity(VehicleData.VEHICLE_DATA, VehicleData.VEHICLE_DATA.ID);
+        public static Identity<WaitPointsRecord, Long> IDENTITY_WAIT_POINTS = Internal.createIdentity(WaitPoints.WAIT_POINTS, WaitPoints.WAIT_POINTS.ID);
     }
 
     private static class UniqueKeys0 {
+        public static final UniqueKey<HourReportRecord> HOUR_REPORT_PKEY = Internal.createUniqueKey(HourReport.HOUR_REPORT, "hour_report_pkey", HourReport.HOUR_REPORT.ID);
         public static final UniqueKey<RegionRbRecord> REGION_RB_PKEY = Internal.createUniqueKey(RegionRb.REGION_RB, "region_rb_pkey", RegionRb.REGION_RB.ID);
         public static final UniqueKey<TrackingDataRecord> TRACKING_DATA_PKEY = Internal.createUniqueKey(TrackingData.TRACKING_DATA, "tracking_data_pkey", TrackingData.TRACKING_DATA.ID);
         public static final UniqueKey<VehicleDataRecord> VEHICLE_DAT_PKEY = Internal.createUniqueKey(VehicleData.VEHICLE_DATA, "vehicle_dat_pkey", VehicleData.VEHICLE_DATA.ID);
+        public static final UniqueKey<WaitPointsRecord> WAIT_POINTS_PKEY = Internal.createUniqueKey(WaitPoints.WAIT_POINTS, "wait_points_pkey", WaitPoints.WAIT_POINTS.ID);
     }
 
     private static class ForeignKeys0 {

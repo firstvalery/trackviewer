@@ -1,7 +1,9 @@
 package ru.smartsarov.trackviewer;
 
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.sql.SQLException;
 
 import javax.ws.rs.Consumes;
@@ -10,10 +12,14 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 
-import org.jooq.exception.DataAccessException;
+import com.itextpdf.text.DocumentException;
+
+
 
 
 @Path("/")
@@ -37,18 +43,6 @@ public class TrackviewerService
     	return Response.status(Response.Status.OK).entity(is).build();
     }
 	
-	@GET
-	@Path("/log_table/insert")
-	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
-    public Response insertNewTable()
-    {
-		try {
-				return Response.status(Response.Status.OK).entity(Trackviewer.InsertFileInto("D:/vehiclesspecial.csv")).build();
-		} catch (ClassNotFoundException | SQLException | DataAccessException | IOException  e) {
-			// TODO Auto-generated catch block
-			return Response.status(Response.Status.OK).entity(e.toString()).build();
-		}
-    }
 	
 	@GET
 	@Path("/vehicle/show")
@@ -67,28 +61,12 @@ public class TrackviewerService
 	
 	
 	@GET
-	@Path("/track/get")
-	@Produces(MediaType.TEXT_XML + ";charset=UTF-8")
-    public Response getTrack(
-    		@QueryParam ("min_ts") long min_ts,
-    		@QueryParam ("max_ts") long max_ts,
-    		@QueryParam ("vehicle_number") String vehicleNumber) throws ClassNotFoundException
-    {
-		try {
-				return Response.status(Response.Status.OK).entity(Trackviewer.marshalTrackData(min_ts, max_ts, vehicleNumber.toLowerCase())).build();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			return Response.status(Response.Status.OK).entity(e.toString()).build();
-		}
-    }
-	
-	@GET
 	@Path("/track/get_json")
 	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
     public Response getTrackJson(
     		@QueryParam ("min_ts") long min_ts,
     		@QueryParam ("max_ts") long max_ts,
-    		@QueryParam ("vehicle_number") String vehicleNumber) throws ClassNotFoundException
+    		@QueryParam ("vehicle_number") String vehicleNumber)
     {
 		try {
 				return Response.status(Response.Status.OK).entity(Trackviewer.jsonTrackData(min_ts, max_ts, vehicleNumber==null?null:vehicleNumber.toLowerCase())).build();
@@ -103,10 +81,10 @@ public class TrackviewerService
 	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
     public Response getJsonDay(
     		@QueryParam ("ts") long ts,
-    		@QueryParam ("type") String type) throws ClassNotFoundException
+    		@QueryParam ("type") String type)
     {
 		try {
-				return Response.status(Response.Status.OK).entity(Trackviewer.getStatistic24HourJson(ts, type)).build();
+				return Response.status(Response.Status.OK).entity(Trackviewer.getDayReportByType(ts, type)).build();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			return Response.status(Response.Status.OK).entity(e.toString()).build();
@@ -128,7 +106,100 @@ public class TrackviewerService
 			}
 	}
 	
+	@GET
+	@Path("/track/timeline/get_week")
+	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
+    public Response getJsonWeek(
+    		@QueryParam ("ts") long ts,
+    		@QueryParam ("type") String type)
+    {
+		try {
+				return Response.status(Response.Status.OK).entity(Trackviewer.getWeekReportByType(ts, type)).build();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			return Response.status(Response.Status.OK).entity(e.toString()).build();
+		}
+    }
 	
 	
+	@GET
+	@Path("/track/report/generate_hourly")
+	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
+    public Response generateHourReport(
+    		@QueryParam ("ts") long ts)
+    {
+		try {
+			Trackviewer.createHourlyReport(ts);
+				return Response.status(Response.Status.OK).entity("Ok").build();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			return Response.status(Response.Status.OK).entity(e.toString()).build();
+		}
+    }
+
 	
+	@GET
+	@Path("/track/report/generate_for_day")
+	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
+    public Response generateHourlyForDay(
+    		@QueryParam ("ts") long ts,
+    		@QueryParam ("type") String type)
+    {
+		try {
+			Trackviewer.createHourlyReportForDay(ts);
+				return Response.status(Response.Status.OK).entity("Ok").build();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			return Response.status(Response.Status.OK).entity(e.toString()).build();
+		}
+    }
+	
+	
+	@GET
+	@Path("/track/report/commonPdf")
+	@Produces({"application/pdf"})
+	public StreamingOutput getCommonPdf(
+			@QueryParam ("ts_min") long ts_min,
+			@QueryParam ("ts_max") long ts_max,
+    		@QueryParam ("type") String type){
+		try {
+		    return new StreamingOutput() {
+		    	@Override
+		        public void write(OutputStream output) throws IOException, WebApplicationException {
+			    	try {
+						Trackviewer.createCommonPdfReport(ts_min, ts_max, type, output);					
+					} catch (DocumentException | ClassNotFoundException | SQLException e) {
+						throw new WebApplicationException();
+					}	
+		        }
+		    };
+		}catch(WebApplicationException e) {
+			//TODO
+			return null;
+		}
+	}  
+	
+	@GET
+	@Path("/track/report/specificPdf")
+	@Produces({"application/pdf"})
+	public StreamingOutput getSpecificPdf(
+			@QueryParam ("ts_min") long ts_min,
+			@QueryParam ("ts_max") long ts_max,
+    		@QueryParam ("number") String number){
+		try {
+		    return new StreamingOutput() {
+		    	@Override
+		        public void write(OutputStream output) throws IOException, WebApplicationException {
+			    	try {
+						Trackviewer.createSpecificPdfReport(ts_min, ts_max, number, output);					
+					} catch (DocumentException | ClassNotFoundException | SQLException e) {
+						throw new WebApplicationException();
+					}	
+		        }
+		    };
+		}catch(WebApplicationException e) {
+			//TODO
+			return null;
+		}
+	}  
 }

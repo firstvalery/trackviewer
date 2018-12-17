@@ -2,17 +2,24 @@ package ru.smartsarov.trackviewer;
 import static ru.smartsarov.trackviewer.postgres.tables.TrackingData.*;
 import static ru.smartsarov.trackviewer.postgres.tables.VehicleData.*;
 import static ru.smartsarov.trackviewer.postgres.tables.RegionRb.*;
+import static ru.smartsarov.trackviewer.postgres.tables.HourReport.*;
+import static ru.smartsarov.trackviewer.postgres.tables.WaitPoints.*;
 import ru.smartsarov.trackviewer.postgres.tables.records.TrackingDataRecord;
 import ru.smartsarov.trackviewer.postgres.tables.records.VehicleDataRecord;
+import ru.smartsarov.trackviewer.postgres.tables.records.WaitPointsRecord;
+import ru.smartsarov.trackviewer.postgres.tables.records.HourReportRecord;
 import ru.smartsarov.trackviewer.postgres.tables.records.RegionRbRecord;
+
 import org.jooq.DSLContext;
 import org.jooq.JSONFormat;
-import org.jooq.Record8;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
 import org.jooq.JSONFormat.RecordFormat;
-import org.jooq.Record;
+
+import org.jooq.Record1;
+import org.jooq.Record11;
 import org.jooq.Record12;
+import org.jooq.Record15;
 import org.jooq.impl.DSL;
 
 import com.esri.core.geometry.GeometryEngine;
@@ -21,59 +28,34 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-
-
-
-
+import com.itextpdf.text.DocumentException;
 
 import java.io.IOException;
-import java.io.StringWriter;
-
+import java.io.OutputStream;
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.HashSet;
+
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.datatype.DatatypeConfigurationException;
-import javax.xml.datatype.DatatypeFactory;
-import javax.xml.namespace.QName;
 
 import ru.smartsarov.trackviewer.JsonTrack.JsonTrack;
 import ru.smartsarov.trackviewer.JsonTrack.ReportForVehicle;
 import ru.smartsarov.trackviewer.JsonTrack.Segment;
 import ru.smartsarov.trackviewer.JsonTrack.TrackPoint;
 import ru.smartsarov.trackviewer.JsonTrack.WaitTrackPoint;
-import ru.smartsarov.trackviewer.gpxschema.ExtensionsTypeSeg;
-import ru.smartsarov.trackviewer.gpxschema.ExtensionsTypeTrk;
-import ru.smartsarov.trackviewer.gpxschema.ExtensionsTypeWpt;
-import ru.smartsarov.trackviewer.gpxschema.GpxType;
-import ru.smartsarov.trackviewer.gpxschema.MetadataType;
-import ru.smartsarov.trackviewer.gpxschema.TrkType;
-import ru.smartsarov.trackviewer.gpxschema.TrksegType;
-import ru.smartsarov.trackviewer.gpxschema.WptType;
 import ru.smartsarov.trackviewer.jsoninsert.JsonInsert;
 import ru.smartsarov.trackviewer.jsoninsert.Vehicle;
 
@@ -97,18 +79,6 @@ public class Trackviewer {
 		   return conn;
 	} 
 
-	/**
-	 * Method for reading data From file
-	 * @throws IOException 
-	 * @throws SQLException 
-	 * @throws ClassNotFoundException 
-	 */
-	public static String InsertFileInto(String fileName) throws IOException, ClassNotFoundException, SQLException {
-		try (Stream<String> stream = Files.lines(Paths.get(fileName))) {	
-			return getJsonMessage("was inserted records: ");// skip the first definition string of CSV file	
-		}
-	}
-	
 	
 	/**
 	 * returns message in json format {"message": "message text"}
@@ -126,64 +96,73 @@ public class Trackviewer {
 	 * @throws ClassNotFoundException 
 	 */
 	public static int InsertListInto(List<JsonInsert>incomingDataList) throws ClassNotFoundException, SQLException  {
-		List<TrackingDataRecord>fileData = new ArrayList<>();
-		Set<VehicleDataRecord> vehicleDataRecordSet = new HashSet<>();
-		Set<String> numberSet= new HashSet<>(); 
-		Set<RegionRbRecord> regionRbRecordSet = new HashSet<>();
-		
+
 		boolean commitFl = false;
-		incomingDataList.stream()
-				.filter(j->j.getVehicle().getUid()!=null && j.getVehicle().getNumber()!=null )//отсеиваем записи без указания номера треккера и госномера
-				.forEach(incData->{
-			//build number set
-			
-					
-			//build set of vehicle
-			vehicleDataRecordSet.add(new VehicleDataRecord(0, 
-															incData.getVehicle().getUid(),
-															incData.getVehicle().getNumber().toLowerCase().replaceAll("\\s", ""),			
-															incData.getVehicle().getType(),
-															incData.getVehicle().getOwner(),
-															incData.getVehicle().getModel(),
-															incData.getVehicle().getDescription()));
-			
-			//build set of region
-			regionRbRecordSet.add(new RegionRbRecord(0,incData.getRegion()));
-			
-			
-			//Creating collection for batch Insert with  Hashcodes of region and vehicle
-			
-			TrackingDataRecord tdr = new TrackingDataRecord( 
-										new Timestamp(1000*incData.getTime()),
-										incData.getLongitude(),
-										incData.getLatitude(),
-										incData.getVelocity(),
-										incData.getDirection(),
-										Arrays.asList(incData.getVehicle().getNumber()
-												.toLowerCase().replaceAll("\\s", "")).hashCode(),
-										null,
-										Arrays.asList(incData.getRegion()).hashCode(),
-										incData.getExtra().get16());
-			tdr.changed(TRACKING_DATA.ID, false);
-			fileData.add(tdr);	
-		});
-					
+		
+		//build set of vehicle
+		Set<VehicleDataRecord> vehicleDataRecordSet = incomingDataList.stream()
+												  .filter(j->j.getVehicle()!=null && j.getVehicle().getNumber()!=null && j.getVehicle().getUid()!=null)
+												  .map(j->{
+													  return new VehicleDataRecord(0, 
+															j.getVehicle().getUid(),
+															j.getVehicle().getNumber().toLowerCase().replaceAll("\\s", ""),			
+															j.getVehicle().getType(),
+															j.getVehicle().getOwner(),
+															j.getVehicle().getModel(),
+															j.getVehicle().getDescription());
+												    })
+												  .collect(Collectors.toSet());
+		
+		//build set of region
+		Set<RegionRbRecord> regionRbRecordSet = incomingDataList.stream()
+													  .filter(j->j.getVehicle()!=null && j.getVehicle().getNumber()!=null && j.getVehicle().getUid()!=null)
+													  .map(j->{
+														  return new RegionRbRecord(0,j.getRegion());
+													    })
+													  .collect(Collectors.toSet());
+											
+		//Creating collection for batch Insert with  Hash codes of region and vehicle
+		List<TrackingDataRecord>fileData = incomingDataList.stream()
+														.filter(j->j.getVehicle()!=null &&
+														j.getVehicle().getNumber()!=null &&
+														j.getVehicle().getUid()!=null &&
+														j.getTime()!=null &&
+														j.getLatitude()!=null &&
+														j.getLatitude()!= null)
+														.map(j->{
+															TrackingDataRecord tdr = new TrackingDataRecord( 
+																	new Timestamp(1000*j.getTime()),
+																	j.getLongitude(),
+																	j.getLatitude(),
+																	j.getVelocity(),
+																	j.getDirection(),
+																	Arrays.asList(j.getVehicle().getNumber()
+																			.toLowerCase().replaceAll("\\s", "")).hashCode(),
+																	null,
+																	Arrays.asList(j.getRegion()).hashCode(),
+																	j.getExtra()!=null ? j.getExtra().get16():null);
+																tdr.changed(TRACKING_DATA.ID, false);
+																return tdr;
+														})
+														.collect(Collectors.toList());
+	
 		//working with DB
 			try (Connection conn = getConnection()){
 				DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);    
-				Result<VehicleDataRecord> vehicleDataRecordResult = dsl
-					    		 									.selectFrom(VEHICLE_DATA)
-					    		 										.fetch();
-				vehicleDataRecordResult.stream().forEach(j->{//remove from set existing vehicle
-					  vehicleDataRecordSet.remove(j.value1(0));
-					  numberSet.add(j.getNumber());
-				});
-				//Inserting new records in table VehicleData	 
-				//TODO
-				// Пересмотреть добавление нового транспортного средства
+
+				//очистим набор для записи данных машин от имеющихся в базе
+				Result<VehicleDataRecord> vehicleDataRecordResult = dsl.selectFrom(VEHICLE_DATA).fetch();
+				vehicleDataRecordSet.removeAll(vehicleDataRecordResult.stream()
+																	  .map(j->j.value1(0))
+																	  .collect(Collectors.toList()));
+				//определим набор номеров ТС, которых нет еще в базе
+				Set<String> numberSet= vehicleDataRecordResult.stream()
+												.map(j->j.getNumber())
+												.collect(Collectors.toSet());
+				//Добавление в таблицу VEHICLE новых данных	 
 				if(!vehicleDataRecordSet.isEmpty()) {		    	 
 				    vehicleDataRecordSet.stream().forEach(j->{	  	
-				    	if (numberSet.contains(j.getNumber())) {//update record		
+				    	if (numberSet.contains(j.getNumber())) {//ТС, для номера которого нет сведений в БД 	
 				    		dsl.update(VEHICLE_DATA)
 				    			.set(VEHICLE_DATA.MODEL, j.getModel())
 				    			.set(VEHICLE_DATA.OWNER, j.getOwner())
@@ -192,7 +171,7 @@ public class Trackviewer {
 				    			.set(VEHICLE_DATA.DESCRIPTION, j.getDescription())
 				    				.where(VEHICLE_DATA.NUMBER.equal(j.getNumber()))
 				    				.execute();
-				    	}else {
+				    	}else {//ТС, для номера которого есть сведения в БД, обновим данные 
 				    		j.changed(VEHICLE_DATA.ID, false);
 				    		dsl.insertInto(VEHICLE_DATA)
 				    		.set(j).execute();
@@ -200,12 +179,11 @@ public class Trackviewer {
 				    });
 				    commitFl=true;
 				}
-				Result<RegionRbRecord> regionRbRecordResult = dsl
-																.selectFrom(REGION_RB)
-																	.fetch();
-				regionRbRecordResult.stream().forEach(j->{//remove from set existing regions
-					regionRbRecordSet.remove(j.value1(0));
-				});
+				//Удалим из набора для записи регионов те регионы, для которых есть запись в базе
+				regionRbRecordSet.removeAll(dsl.selectFrom(REGION_RB).fetch()
+																	.stream()
+																	.map(j->j.value1(0))
+																	.collect(Collectors.toList()));								
 				//Inserting new records in table Region	   
 				if(!regionRbRecordSet.isEmpty()) {		    	 
 					regionRbRecordSet.stream().forEach(j->{	 
@@ -218,25 +196,20 @@ public class Trackviewer {
 				
 				
 				 //Selecting Records from vehicleData table for finding ID as foreign key for tracking data record. 
-				 vehicleDataRecordResult = dsl
-							.selectFrom(VEHICLE_DATA)
-								.fetch();
-
-				 Map<Integer, Integer> vehicleDataMap = new HashMap<>();
-				 vehicleDataRecordResult.stream().forEach(j->{
-					 vehicleDataMap.put(Arrays.asList(j.getNumber()).hashCode(),j.getId());
-				});
+				Map<Integer, Integer> vehicleDataMap = dsl
+								.selectFrom(VEHICLE_DATA)
+								.fetch()
+								.stream()
+								.collect(Collectors.toMap(vdr ->Arrays.asList(vdr.getNumber()).hashCode(), VehicleDataRecord::getId));
+								
+				 
 				//Selecting Records from regionRb table for finding ID as foreign key for tracking data record. 
-				 regionRbRecordResult = dsl
+				 Map<Integer, Integer> regionRbMap = dsl
 							.selectFrom(REGION_RB)
-								.fetch();
-
-				 Map<Integer, Integer> regionRbMap = new HashMap<>();
-				 regionRbRecordResult.stream().forEach(j->{
-					 regionRbMap.put(Arrays.asList(j.getRegion()).hashCode(),j.getId());
-				});
-				
-
+							.fetch()
+							.stream()
+							.collect(Collectors.toMap(rg->Arrays.asList(rg.getRegion()).hashCode(), RegionRbRecord::getId));
+				 
 					//Preparing data for batch insert into TrackingData table
 				fileData.stream().forEach(j->{
 					j.setVehicleUid(vehicleDataMap.get(j.getVehicleUid()));
@@ -263,208 +236,13 @@ public class Trackviewer {
 		try{
 			List<JsonInsert>jiList = new Gson().fromJson(jsonData, new TypeToken<List<JsonInsert>>(){}.getType()); 
 			int rc = InsertListInto(jiList);
-			System.out.println("Incoming json: " + jsonData);
-			System.out.println("total records: "+ String.valueOf(jiList.size()));
-			System.out.println("Was inserted records: "+String.valueOf(rc)+"  "+Instant.now().atOffset(ZoneOffset.ofHours(3)).toString());
 			return getJsonMessage("Was received records: "+String.valueOf(rc));
 		}catch(JsonSyntaxException e) {
 			System.out.println(e.toString()+"  "+Instant.now().toString());
 			return getJsonMessage("Json syntax error! 0 records was added!");
 		}
 	}
-	
-	
-	
-	
-	
-	/**Select from base track data
-	 * @throws SQLException 
-	 * @throws ClassNotFoundException 
-	 * 
-	 * 
-	 */	
-	public static List<Record8<Timestamp,Short,BigDecimal,BigDecimal,Short,Integer,String,String>> 
-		selectTrackData(long min_ts, long max_ts, String vehicleNumber)	
-										throws ClassNotFoundException, SQLException{
-			
-			try (Connection conn = getConnection()) {
-		         DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);    
-		         List<Record8<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String>> result = 
-		        		 				dsl.select(TRACKING_DATA.TIMESTAMP, 
-		         					  		TRACKING_DATA.VELOCITY, 
-		         					  		TRACKING_DATA.LATITUDE, 
-		         					  		TRACKING_DATA.LONGITUDE, 
-		         					  		TRACKING_DATA.DIRECTION, 
-		         					  		TRACKING_DATA.ODOMETER,
-		         					  		VEHICLE_DATA.NUMBER,
-		         					  		VEHICLE_DATA.UID)
-				         							.from(TRACKING_DATA)
-				         								.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(TRACKING_DATA.VEHICLE_UID))
-				         									.where(TRACKING_DATA.TIMESTAMP.between(new Timestamp(min_ts*1000), new Timestamp(max_ts*1000))
-				         										.and(VEHICLE_DATA.NUMBER.eq(vehicleNumber)))
-		         													.orderBy(TRACKING_DATA.TIMESTAMP)
-		         														.fetch();       
-		            
-		         	return result;
-		         	
-			}  
-	}	
 
-	/**
-	 * Marshaling the data
-	 * @throws JAXBException 
-	 * @throws SQLException 
-	 * @throws ClassNotFoundException 
-	 * @throws DatatypeConfigurationException 
-	 */	
-	public static String marshalTrackData(long min_ts, long max_ts, String vehicleNumber) throws SQLException, JAXBException, ClassNotFoundException, DatatypeConfigurationException {
-		List<Record8<Timestamp,Short,BigDecimal,BigDecimal,Short,Integer,String,String>> result = selectTrackData(min_ts, max_ts, vehicleNumber);
-
-		GpxType gpx = initGpx();
-		
-		if(!result.isEmpty()) {
-			gpx.getTrk().get(0).setName(result.get(0).getValue(VEHICLE_DATA.NUMBER));
-			gpx.getTrk().get(0).setDesc("The vehicle track");
-			
-
-		}else return jaxbTrackMarshal(gpx);
-		
-		//define temporary instance for saving data outside of cycle
-	    int segmentIndex = 0;    
-	    WptType tmpWpt = new WptType();  
-	    tmpWpt.setLat(new BigDecimal(0));
-	    tmpWpt.setLon(new BigDecimal(0));
-	    tmpWpt.setExtensions(new ExtensionsTypeWpt());
-	    tmpWpt.getExtensions().setUnixtimestamp(0L);
-	    
-	    //define GregorianCalendar instance for building XMLGregorianCalendar from it
-	    GregorianCalendar cal = new GregorianCalendar();
-	    
-	    Integer odometer=null;
-	    //Building of track segments     	
-	   for (int i=0; i<result.size(); i++) {
-	       if (!result.get(i).get(TRACKING_DATA.LATITUDE).equals( tmpWpt.getLat()) ||
-	         				!result.get(i).get(TRACKING_DATA.LONGITUDE).equals(tmpWpt.getLon())) {// check for new coordinates
-	         	
-	    	   
-	    	   //Creating wpt by result[i]
-	    	   WptType wpt = wptBuild(result.get(i));
-	    	   
-	    	   //Set TimeStamp newXMLGregorianCalendar Format.
-	    	   //For mem economy use one GregorianCalendar Instance defining early outside of cycle "for"
-	           cal.setTimeInMillis(result.get(i).getValue(TRACKING_DATA.TIMESTAMP).getTime());	
-	         	wpt.setTime(DatatypeFactory.newInstance().newXMLGregorianCalendar(cal));
-	           
-	         	//creating new segment
-	         	long delta = 0;
-	         	if((delta = (wpt.getExtensions().getUnixtimestamp() - tmpWpt.getExtensions().getUnixtimestamp())/1000) 
-	         			> Integer.valueOf(Props.get().getProperty("suspense","300"))){//suspense time constant
-	         		segmentIndex++;
-	         		gpx.getTrk().get(0).getTrkseg().add(new TrksegType());//new segment building
-	         		gpx.getTrk().get(0).getTrkseg().get(segmentIndex-1).setExtensions(new ExtensionsTypeSeg());
-	         		if (segmentIndex>1) {// from second segment begins to set waiting in sec
-	         			gpx.getTrk().get(0).getTrkseg().get(segmentIndex-1).getExtensions().setWaiting(delta);
-	         		}
-	         		//distance of segment for Teltonika trackers
-	         		if (result.get(i).getValue(TRACKING_DATA.ODOMETER)!=null) { 
-	         			gpx.getTrk().get(0).getTrkseg().get(segmentIndex-1).getExtensions().setOdometer(
-	         															result.get(i).getValue(TRACKING_DATA.ODOMETER));
-	         			if (odometer!=null && segmentIndex>1) {
-	         				gpx.getTrk().get(0).getTrkseg().get(segmentIndex-2).getExtensions().setDistance(
-	         					 odometer - gpx.getTrk().get(0).getTrkseg().get(segmentIndex-2).getExtensions().getOdometer());			
-	         			}
-	         		}
-	         	}
-	         	odometer = result.get(i).getValue(TRACKING_DATA.ODOMETER);
-	         	gpx.getTrk().get(0).getTrkseg().get(segmentIndex-1).getTrkpt().add(wpt);
-	         	tmpWpt = wpt;
-	         }
-	    }
-	 //last segment distance  for Teltonika trackers  
-	   if (result.get(result.size()-1).getValue(TRACKING_DATA.ODOMETER)!=null) { 
-		   gpx.getTrk().get(0).getTrkseg().get(gpx.getTrk().get(0).getTrkseg().size()-1).getExtensions().setDistance(
-				result.get(result.size()-1).getValue(TRACKING_DATA.ODOMETER)
-				- gpx.getTrk().get(0).getTrkseg().get(gpx.getTrk().get(0).getTrkseg().size()-1).getExtensions().getOdometer());
-			if(result.get(0).getValue(TRACKING_DATA.ODOMETER)!=null) {
-				//Calculate distance of Track for Teltonika 
-				gpx.getTrk().get(0).setExtensions(new ExtensionsTypeTrk());
-				gpx.getTrk().get(0).getExtensions().setDistance(
-						result.get(result.size()-1).getValue(TRACKING_DATA.ODOMETER)
-															- result.get(0).getValue(TRACKING_DATA.ODOMETER));
-			}	
-	   }
-	   
-	   
-	   
-	   return jaxbTrackMarshal(gpx);
-	}
-/*	
-	*//**
-	 * Returns JsonBase64 instance from base64
-	 * 
-	 * 
-	 *//*
-	private static Extra getAdditionalParams(String base64String) {
-		try {
-			byte[] valueDecoded= Base64.getDecoder().decode(base64String);
-			return new Gson().fromJson(new String(valueDecoded, "UTF-8"), Extra.class);
-			
-		} catch ( JsonSyntaxException | UnsupportedEncodingException e) {
-			return new Extra();
-		}
-	}
-	*/
-	
-	
-	
-	/**
-	 * jaxb marshaler
-	 * returns XML GPX document as String
-	 * @throws JAXBException 
-	 */
-	static private String jaxbTrackMarshal(GpxType gpx) throws JAXBException {
-		JAXBContext jaxbContext = JAXBContext.newInstance( GpxType.class );
-		   Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
-		   jaxbMarshaller.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, true );
-		    		
-		   JAXBElement<GpxType> jaxbElement = new JAXBElement<GpxType>(new QName(TrackviewerConstants.XSD_TYPE_PATH,
-				   										TrackviewerConstants.GPX_ROOT_NAME), GpxType.class, gpx);
-		   StringWriter sw = new StringWriter();
-		   jaxbMarshaller.marshal(jaxbElement, sw);
-		   return sw.getBuffer().toString();
-	}
-	
-	/**
-	 * Creates wpt Instance from result data
-	 */
-	static private WptType wptBuild(Record result) {
- 	    WptType wpt = new WptType();
- 	   
-    	wpt.setLat(result.getValue(TRACKING_DATA.LATITUDE));
-    	wpt.setLon(result.getValue(TRACKING_DATA.LONGITUDE));
-    	wpt.setMagvar(BigDecimal.valueOf(result.getValue(TRACKING_DATA.DIRECTION)));
-    	wpt.setExtensions(new ExtensionsTypeWpt());
-    	wpt.getExtensions().setUnixtimestamp(result.getValue(TRACKING_DATA.TIMESTAMP).getTime()/1000);
-    	wpt.getExtensions().setVelocity(BigInteger.valueOf(result.getValue(TRACKING_DATA.VELOCITY)));
-
-		return wpt;	
-	}
-	
-	/**
-	 *Prepare GpxType for marshaling  
-	 * 
-	 */
-	private static GpxType initGpx() {
-		GpxType gpx = new GpxType();
-		gpx.setCreator("smartsarov.ru");
-		gpx.setVersion("1.0");
-		gpx.setMetadata(new MetadataType());
-		gpx.getTrk().add(new TrkType());
-		
-		return gpx;	
-	}
-	
-	
 	/**
 	 * Returns JSON of all vehicles registered in DB
 	 * @throws SQLException 
@@ -473,26 +251,21 @@ public class Trackviewer {
 	public static String getVehicleList() throws ClassNotFoundException, SQLException  {
 		try (Connection conn = getConnection()) {
 	         DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);  
-	         Result<VehicleDataRecord> result = dsl.selectFrom(VEHICLE_DATA).fetch(); 
-	        
+	         Result<VehicleDataRecord> result = dsl.selectFrom(VEHICLE_DATA).fetch();      
 	         return result.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
 		}
 	}
 	
-	
-	
-	
-	
+
 	/** Returns JsonTrack object
 	 * @throws SQLException 
 	 * @throws ClassNotFoundException 
 	 * @throws DatatypeConfigurationException 
 	 */
 	private static JsonTrack getTrackData(long min_ts, long max_ts, String vehicleNumber) throws ClassNotFoundException, SQLException {
-		List<Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String>> result=null;
 		try (Connection conn = getConnection()) {
 	         DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);    
-	         result = 
+	         return dataAnalasing(
 	        		 				dsl.select(TRACKING_DATA.TIMESTAMP, 
 	         					  		TRACKING_DATA.VELOCITY, 
 	         					  		TRACKING_DATA.LATITUDE, 
@@ -506,51 +279,97 @@ public class Trackviewer {
 	         					  		VEHICLE_DATA.MODEL,
 	         					  		VEHICLE_DATA.DESCRIPTION)
 			         							.from(TRACKING_DATA)
-			         								.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(TRACKING_DATA.VEHICLE_UID))
-			         									.where(TRACKING_DATA.TIMESTAMP.between(new Timestamp(min_ts*1000), new Timestamp(max_ts*1000))
-			         										.and(VEHICLE_DATA.NUMBER.eq(vehicleNumber)))
-	         													.orderBy(TRACKING_DATA.TIMESTAMP)
-	         														.fetch();       
+			         							.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(TRACKING_DATA.VEHICLE_UID))
+			         							.where(TRACKING_DATA.TIMESTAMP.between(new Timestamp(min_ts*1000), new Timestamp(max_ts*1000))
+			         							.and(VEHICLE_DATA.NUMBER.eq(vehicleNumber)))
+	         									.orderBy(TRACKING_DATA.TIMESTAMP)
+	         									.fetch());       
 		}       
-	        	
-		  
-
-		return dataAnalasing(result);
-		
 	}
 	
 	/**
 	 * dataAnalasing
-	 * Returns JsonTrack Object by 
+	 * Returns JsonTrack Object for the vehicle result 
 	 * 
 	 */
 	private static JsonTrack dataAnalasing(List<Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String>> result) {
 		JsonTrack jt = new JsonTrack();
+
+		jt.setSegments(new ArrayList<Segment>());
+		jt.setWaitTrackPoints(new ArrayList<WaitTrackPoint>());
 		int filterVelocity = Integer.valueOf(Props.get().getProperty("filterVelocity", "50"));
 		int waitPointDuration = Integer.valueOf(Props.get().getProperty("suspense","300"));
-		boolean odometerFlag=false;
-		double tmpOdometer=0.0;
+		boolean odometerFlag = false;
+		double tmpOdometer = 0.0;
+
 		if(!result.isEmpty()) {
-			jt.setSegments(new ArrayList<Segment>());
-			jt.setWaitTrackPoints(new ArrayList<WaitTrackPoint>());
 			jt.setVehicle(new Vehicle(result.get(0).getValue(VEHICLE_DATA.TYPE),
 										result.get(0).getValue(VEHICLE_DATA.UID),
 											result.get(0).getValue(VEHICLE_DATA.NUMBER),
 												result.get(0).getValue(VEHICLE_DATA.OWNER),
 													result.get(0).getValue(VEHICLE_DATA.MODEL),
 														result.get(0).getValue(VEHICLE_DATA.DESCRIPTION)));
-			//TODO
+			jt.setTsFrom(result.get(0).getValue(TRACKING_DATA.TIMESTAMP).getTime()/1000);
+			jt.setTsTo(result.get(result.size()-1).getValue(TRACKING_DATA.TIMESTAMP).getTime()/1000);
+			//TODO пересмотреть принцип формирования флага одометра
 			odometerFlag = result.get(0).getValue(TRACKING_DATA.ODOMETER)!=null;
-		}else return jt;
+		}else { 
+			jt.setVehicle(new Vehicle());
+			return jt;
+		}
 		
-		//define temporary instance for saving data outside of cycle
-	    int segmentIndex = 0;    
+		//define temporary instances and variables for saving data outside of cycle 
 	    TrackPoint tmpPt = new TrackPoint((short)0, (short)0, new BigDecimal(0), new BigDecimal(0), 0L, (short)0);  
-
+	    int segmentIndex = 0;  
+	    Double odometer = 0.0;
 	    
-	    Double odometer=0.0;
+	    // Поиск первой точки с координатами, соответствующими критерию достоверности.
+	    // Критерий достоверности: точка принадлежит множеству, состоящему не менее, чем из 2 последовательных точек, 
+	    // удовлетворяющим условию "физичности" скорости перемещения из одной в другую
+	    
+	    int count = 0;
+	    if(result.size()>1) {
+		    for (int i = 1; i < result.size(); i++) {
+		    	tmpPt = new TrackPoint(result.get(i-1).get(TRACKING_DATA.VELOCITY),
+			    		result.get(i-1).get(TRACKING_DATA.DIRECTION),
+			    		result.get(i-1).get(TRACKING_DATA.LONGITUDE),
+			    		result.get(i-1).get(TRACKING_DATA.LATITUDE),
+			    		result.get(i-1).get(TRACKING_DATA.TIMESTAMP).getTime()/1000,
+			    		(short)0);
+		    	
+		    	if (!result.get(i).get(TRACKING_DATA.LATITUDE).equals( tmpPt.getLatitude()) ||
+	     				!result.get(i).get(TRACKING_DATA.LONGITUDE).equals(tmpPt.getLongitude())) {
+		    	 //Creating wpt by result[i]
+		    	   TrackPoint pt = new TrackPoint(result.get(i).get(TRACKING_DATA.VELOCITY),
+		    			   result.get(i).get(TRACKING_DATA.DIRECTION),
+		    			   result.get(i).get(TRACKING_DATA.LONGITUDE),
+		    			   result.get(i).get(TRACKING_DATA.LATITUDE),
+		    			   result.get(i).get(TRACKING_DATA.TIMESTAMP).getTime()/1000,
+		    			   (short)0);    	   
+		    	   long delta = pt.getTimestamp() - tmpPt.getTimestamp();
+		    	   if (delta<=0) continue;// skip iteration
+		    	   
+		    	   count++;
+		    	   
+		    	   if (getDistance(tmpPt, pt)/delta > filterVelocity) {
+		    		   count = 0;
+		    	   }
+		    		 
+		    	   if (count == 1) {
+		    		   count = i - count;
+		    		   break;	   
+		    	   }	   
+		    	   tmpPt = pt;
+		    	}
+		    }    
+	    } else {
+	    	count = 0;
+	    }
+
+	   tmpPt = new TrackPoint((short)0, (short)0, new BigDecimal(0), new BigDecimal(0), 0L, (short)0); 
 	    //Building of track segments     	
-	   for (int i=0; i < result.size(); i++) {
+
+	   for (int i = count; i < result.size(); i++) {
 	       if (!result.get(i).get(TRACKING_DATA.LATITUDE).equals( tmpPt.getLatitude()) ||
 	         				!result.get(i).get(TRACKING_DATA.LONGITUDE).equals(tmpPt.getLongitude())) {// check for new coordinates
 
@@ -566,9 +385,10 @@ public class Trackviewer {
 
 	    	   //filtering unreal points 
 	         	if (i > 0) {
-	         		tmpOdometer = getDistance(tmpPt, pt);		
-		         	if(delta==0 || tmpOdometer/delta > filterVelocity) {
-		         		continue; // skip iteration
+
+	         			tmpOdometer = getDistance(tmpPt, pt);		
+		         		if(delta<=0 || tmpOdometer/delta > filterVelocity) {
+		         			continue; // skip iteration
 		         	}
 	         	}else {
 	         		tmpOdometer = 0.0;
@@ -582,7 +402,6 @@ public class Trackviewer {
 	         	}
 	         	
 	         	//creating new segment
-	         	
 	         	if(delta > waitPointDuration){//suspense time constant        		
 	         		segmentIndex++;     			
 	         		jt.getSegments().add(new Segment());//new segment building
@@ -610,17 +429,18 @@ public class Trackviewer {
    
 	   jt.setDistance(Double.valueOf(jt.getSegments().get(jt.getSegments().size()-1).getTrackPoints().get(jt.getSegments().get(jt.getSegments().size()-1).getTrackPoints().size()-1).getOdometer()-
 			   			jt.getSegments().get(0).getTrackPoints().get(0).getOdometer()).intValue());
-	  
+	   
 	  return jt;  		
 	}
 	
 	/**
+	 * returns JSON formated track for the vehicle between two timestamp values
 	 * @throws SQLException 
 	 * @throws ClassNotFoundException 
 	 * @throws DatatypeConfigurationException 
 	 */
 	public static String jsonTrackData(long min_ts, long max_ts, String vehicleNumber) 
-							throws ClassNotFoundException, SQLException, DatatypeConfigurationException {
+							throws ClassNotFoundException, SQLException {
 		return new GsonBuilder()
 			  .excludeFieldsWithoutExposeAnnotation()
 			  .create().toJson(getTrackData(min_ts, max_ts, vehicleNumber));  
@@ -634,20 +454,433 @@ public class Trackviewer {
 				new Point(toPt.getLatitude().doubleValue(),toPt.getLongitude().doubleValue()));
 	}
 	
-	
+
 	/**
-	 * Get 24 Hour Data of all vehicles 
+	 * Get statistic for last 24 hour for all vehicles in JSON
 	 * @throws SQLException 
 	 * @throws ClassNotFoundException 
-	 * 
 	 */
-	private static List<Record12<Timestamp,Short,BigDecimal,BigDecimal,Short,Integer,String,String,String,String,String,String>> getResultByDay(long tsFrom, long tsTo, String type) throws ClassNotFoundException, SQLException {
-			
+	public static String toAnnotatedJson(Object obj){
+		return new GsonBuilder()
+				.excludeFieldsWithoutExposeAnnotation().create().toJson(obj); 
+	}
+	
+	/**
+	 * This method is called for creating report hourly
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 */
+	public static void createHourlyReport(long ts) throws ClassNotFoundException, SQLException {	
+		//Создаем отчет с меткой времени всегда соответсвующей виду HH:00:00
+		ZonedDateTime moment = ZonedDateTime.ofInstant(Instant.ofEpochMilli(ts*1000), ZoneId.systemDefault());
+		ts = moment.minusMinutes(moment.getMinute()).minusSeconds(moment.getSecond()).toEpochSecond()*1000;
+	
 		try (Connection conn = getConnection()) {
-	         DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);    	         
-	         List<Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String>>
-	         result = 
-		 				dsl.select(TRACKING_DATA.TIMESTAMP, 
+	         DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);  
+	         
+	         //get last waitpoints_id value in waiting_table
+	          Record1<Integer> lastWaitpoints_id_result =  dsl
+	        		 						.select(DSL.max(HOUR_REPORT.WAITPOINTS_ID))
+	        		 						.from(HOUR_REPORT)
+	        		 						.fetchAny();
+	        		 						
+	          Integer lastWaitpoints_id = null; 
+	          if (lastWaitpoints_id_result!=null && (lastWaitpoints_id = lastWaitpoints_id_result.value1())!=null) {
+	        	 
+	          } else {
+	        	  lastWaitpoints_id = 0;  
+	          }
+	          
+	         //ArrayList of HourReport Record
+	         List<HourReportRecord> hourReportList = new ArrayList<>();
+	         
+	         //ArrayList of WaitPoints Record
+	         List<WaitPointsRecord> waitPointsList = new ArrayList<>();
+	       //TODO  Рассмотреть механизм поиска ID по номеру без обращения к базе. Т.е. на этапе формирования JT 
+	         //Selecting Records from vehicleData table for finding ID as foreign key for tracking data record. 
+
+			 Map<String, Integer> vehicleDataMap = dsl
+													.selectFrom(VEHICLE_DATA)
+													.fetch()
+													.stream()
+													.collect(Collectors.toMap(k->k.getNumber(), k->k.getId()));
+
+			//get mapped tracking data for vehicle number as key
+			 List<JsonTrack>jtList = dsl.select(TRACKING_DATA.TIMESTAMP, 
+						TRACKING_DATA.VELOCITY, 
+						TRACKING_DATA.LATITUDE, 
+						TRACKING_DATA.LONGITUDE, 
+						TRACKING_DATA.DIRECTION, 
+						TRACKING_DATA.ODOMETER,
+						VEHICLE_DATA.NUMBER,
+						VEHICLE_DATA.UID,
+						VEHICLE_DATA.OWNER,
+						VEHICLE_DATA.TYPE,
+						VEHICLE_DATA.MODEL,
+						VEHICLE_DATA.DESCRIPTION)
+							.from(TRACKING_DATA)
+							.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(TRACKING_DATA.VEHICLE_UID))
+							.where(TRACKING_DATA.TIMESTAMP
+	        		 		.between(new Timestamp(ts-3600000), new Timestamp(ts)))
+	        		 		.fetch()
+	        		 		.stream()
+	        		 		.collect(Collectors.groupingBy(Record12<Timestamp, Short, BigDecimal, BigDecimal, 
+	        		 																	Short, Integer, String, String, 
+	        		 																		String, String, String, String>::value7))       
+
+							 .entrySet()
+							 .stream()
+							 .map(s->{return dataAnalasing(s.getValue()
+									  		.stream()
+					  						.sorted(new Comparator<Record12<Timestamp, Short, BigDecimal, BigDecimal, 
+					  															Short, Integer, String, String, 
+					  																String, String, String, String>>(){
+	 											@Override
+	 											public int compare(//compare two records by timestamps
+	 													Record12<Timestamp, Short, BigDecimal, BigDecimal, 
+	 																Short, Integer, String, String, 
+	 																	String, String, String, String> a,
+	 													Record12<Timestamp, Short, BigDecimal, BigDecimal, 
+	 																Short, Integer, String, String, String, 
+	 																	String, String, String> b) {
+	 												return a.value7().compareTo(b.value7());
+	 											}
+					  						}).collect(Collectors.toList()));		 
+			 }).collect(Collectors.toList());
+			 
+		//TODO	Требуется рефакторинг  for(JsonTrack jt :jtList)  под Stream API 
+	         for(JsonTrack jt :jtList) {	 
+	        	 if(!jt.getWaitTrackPoints().isEmpty()) {//if not empty  
+	        		 lastWaitpoints_id++;
+	        		 for(WaitTrackPoint wp: jt.getWaitTrackPoints()){
+	        			 WaitPointsRecord tmpRec=new WaitPointsRecord(0L,//Long id
+							        new Timestamp(wp.getTrackPoint().getTimestamp()*1000),//Timestamp ts,
+							        wp.getTrackPoint().getLongitude(),//BigDecimal lng
+							        wp.getTrackPoint().getLatitude(),//BigDecimal lat,
+							        wp.getWaiting(),//Integer waiting,
+							        lastWaitpoints_id//lastWaitpoints_id//Integer waitpointsId
+							        );
+	        			 tmpRec.changed(WAIT_POINTS.ID, false);
+	        			 waitPointsList.add(tmpRec);
+	        		 }
+	        	 }    	 
+	        	int totalDriving = jt.getSegments().isEmpty()?0:jt.getSegments().stream()
+	        			.map(seg->seg.getTrackPoints().get(seg.getTrackPoints().size()-1).getTimestamp()-seg.getTrackPoints().get(0).getTimestamp())
+	        			.reduce((x,y)->x+y).get().intValue();
+	        	int totalWaiting = jt.getWaitTrackPoints().isEmpty()?0:jt.getWaitTrackPoints()
+	        			.stream()
+	        			.map(wp->wp.getWaiting())
+	        			.reduce((x,y)->x+y).get();
+	        	//begin to add batch for hour Report table
+	        	 //parse jt
+	        	 HourReportRecord tmpHrr = new HourReportRecord(0L,//Long id, 
+											        			 new Timestamp(ts),//Timestamp ts, 
+											        			 vehicleDataMap.get(jt.getVehicle().getNumber()),//Integer vehicleId, 
+											        			 jt.getDistance(),//Integer distance, 
+											        			 totalWaiting,// Integer waiting, 
+											        			 totalDriving,// Integer driving, 
+											        			 jt.getWaitTrackPoints().isEmpty()?0:lastWaitpoints_id,//Integer waitpointsId, 
+											        			 0.0F);//Float fuel);
+	        	 tmpHrr.changed(HOUR_REPORT.ID, false);
+	        	 hourReportList.add(tmpHrr);
+	         }
+	         //batch created records...
+	         dsl.batchInsert(waitPointsList).execute();
+	         dsl.batchInsert(hourReportList).execute();
+	         conn.commit();
+		}	
+	}
+
+		/**
+		 * Returns day report for typed vehicles
+		 * @throws SQLException 
+		 * @throws ClassNotFoundException 
+		 */
+		public static String getDayReportByType(long ts, String type) throws ClassNotFoundException, SQLException {
+
+			ZonedDateTime moment = ZonedDateTime.ofInstant(Instant.ofEpochMilli(ts*1000), ZoneId.systemDefault());
+			moment = moment.minusHours(moment.getHour()-1).minusMinutes(moment.getMinute()).minusSeconds(moment.getSecond());
+
+			try (Connection conn = getConnection()) {
+		         DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);  
+		         List<List<ReportForVehicle>>rfvReport 	
+		        	= dsl.select(HOUR_REPORT.TS, 
+			        		 	VEHICLE_DATA.NUMBER,
+			        		 	VEHICLE_DATA.TYPE,
+			        		 	VEHICLE_DATA.UID,
+			        		 	VEHICLE_DATA.OWNER,
+			        		 	VEHICLE_DATA.MODEL,
+			        		 	VEHICLE_DATA.DESCRIPTION,
+			        		    HOUR_REPORT.DISTANCE,
+			        		    HOUR_REPORT.DRIVING,
+			        		    HOUR_REPORT.WAITING,
+			        		    HOUR_REPORT.FUEL,
+			        		    WAIT_POINTS.LNG,
+			        		    WAIT_POINTS.LAT,
+			        		    WAIT_POINTS.TS,
+			        		    WAIT_POINTS.WAITING)
+			         				.from(HOUR_REPORT)
+			         				.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(HOUR_REPORT.VEHICLE_ID))
+			         				.leftJoin(WAIT_POINTS).on(WAIT_POINTS.WAITPOINTS_ID.eq(HOUR_REPORT.WAITPOINTS_ID))
+			         				.where(HOUR_REPORT.TS
+			         				.between(new Timestamp(moment.toEpochSecond()*1000), new Timestamp(moment.plusHours(23).toEpochSecond()*1000))
+			         				.and(VEHICLE_DATA.TYPE.eq(type)))
+			         				.fetch()
+			         				.stream()
+			         				.collect(Collectors.groupingBy(Record15<Timestamp, String, String, String, 
+			         																String, String, String, Integer, 
+			         																	Integer, Integer, Float, BigDecimal, 
+			         																		BigDecimal, Timestamp, Integer>::value1))
+		        						.entrySet()
+		        						.stream()
+		        						.map(t->{				
+				         					return t.getValue()
+				         					.stream()
+											.collect(Collectors.groupingBy(Record15<Timestamp, String, String, String,//маппируем по номеру ТС
+																						String, String, String, Integer, 
+																							Integer, Integer, Float, BigDecimal, 
+																								BigDecimal, Timestamp, Integer>::value2))
+											.entrySet()
+											.stream()//по каждому элементу Entry
+											.map(p->{ 
+														ReportForVehicle rfv = new ReportForVehicle(null,0,null);												 
+														List<WaitTrackPoint> wptList = p.getValue()//создадим список остановок
+														.stream()
+														.map(s->{
+																	if(s.getValue(WAIT_POINTS.WAITING)==null) return null;
+																	WaitTrackPoint wtp = new WaitTrackPoint(
+																			new TrackPoint((short)0,
+																							(short)0,
+																							s.getValue(WAIT_POINTS.LNG),
+																							s.getValue(WAIT_POINTS.LAT),
+																							s.getValue(WAIT_POINTS.TS).getTime()/1000,
+																							(short)0),
+																										s.getValue(WAIT_POINTS.WAITING));
+																					return wtp;		
+																})
+														.sorted(new Comparator<WaitTrackPoint>() {
+
+															@Override
+															public int compare(WaitTrackPoint a, WaitTrackPoint b) {
+																if (a.getTrackPoint().getTimestamp()>b.getTrackPoint().getTimestamp())return 1;
+																if (a.getTrackPoint().getTimestamp()<b.getTrackPoint().getTimestamp())return -1;
+																return 0;	
+															}})
+														.collect(Collectors.toList());
+														rfv.setWaitTrackPoints(wptList.contains(null)?null:wptList);
+														
+														Record15<Timestamp, String, String, String, 
+															String, String, String, Integer, 
+																Integer, Integer, Float, BigDecimal, 
+																	BigDecimal, Timestamp, Integer> tmpRec = p.getValue().get(0);
+														
+														rfv.setDistance(tmpRec.getValue(HOUR_REPORT.DISTANCE));
+														rfv.setTsTo(tmpRec.getValue(HOUR_REPORT.TS).getTime()/1000);
+														rfv.setTsFrom(rfv.getTsTo()-3600);
+														rfv.setVehicle(new Vehicle(tmpRec.getValue(VEHICLE_DATA.TYPE),
+																					tmpRec.getValue(VEHICLE_DATA.UID),
+																					tmpRec.getValue(VEHICLE_DATA.NUMBER),
+																					tmpRec.getValue(VEHICLE_DATA.OWNER),
+																					tmpRec.getValue(VEHICLE_DATA.MODEL),
+																					tmpRec.getValue(VEHICLE_DATA.DESCRIPTION)
+																				));
+														rfv.setTotalDriving(tmpRec.getValue(HOUR_REPORT.DRIVING));
+														rfv.setTotalWaiting(tmpRec.getValue(HOUR_REPORT.WAITING));
+														return  rfv;
+													})
+											.collect(Collectors.toList());								
+				         				})
+				         				.sorted(new Comparator<List<ReportForVehicle>>(){
+											@Override
+											public int compare(List<ReportForVehicle> a, List<ReportForVehicle> b) {
+													if (a.get(0).getTsFrom() < b.get(0).getTsFrom()) return -1;				
+													if (a.get(0).getTsFrom() > b.get(0).getTsFrom()) return 1;
+													return 0;
+											}
+				         				}).collect(Collectors.toList());
+			        
+		        //определим и заполним недостающие часовые отчеты пустыми 
+		        //объектами для соблюдения ранее принятого соглашения по  JSON 
+		         
+		         //Set меток времени в получившихся суточном отчете
+		         Set<Long> rfvReportTiestampSet = rfvReport.stream().map(p->p.get(0).getTsTo()).collect(Collectors.toSet());
+		         
+		         //пытаемся добавить в набор требуемые метки отчета. 
+		         //там где это получается нужно добавить пропуск в основной отчет
+		         for(int i = 0; i < 24; i++) {
+		        	 if (rfvReportTiestampSet.add(moment.toEpochSecond()+3600*i)) {
+		        		 rfvReport.add(i, new ArrayList<>());
+		        	 }
+		         }
+		        return toAnnotatedJson(rfvReport);
+			}		
+	}	
+		
+		
+	/**
+	 * Returns week report for typed vehicles
+	 * 
+	 */	
+		public static String getWeekReportByType(long ts, String type) throws ClassNotFoundException, SQLException {
+			ZoneId zoneId = ZoneId.systemDefault();
+			ZonedDateTime moment = ZonedDateTime.ofInstant(Instant.ofEpochMilli(ts*1000), zoneId);
+			moment = moment.minusDays(6).minusHours(moment.getHour()-1).minusMinutes(moment.getMinute()).minusSeconds(moment.getSecond());
+			
+			try (Connection conn = getConnection()) {
+		         DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);  
+		          List<List<ReportForVehicle>> rfvReport 	
+		          = dsl.select(HOUR_REPORT.TS, 
+			        		 	VEHICLE_DATA.NUMBER,
+			        		 	VEHICLE_DATA.TYPE,
+			        		 	VEHICLE_DATA.UID,
+			        		 	VEHICLE_DATA.OWNER,
+			        		 	VEHICLE_DATA.MODEL,
+			        		 	VEHICLE_DATA.DESCRIPTION,
+			        		    HOUR_REPORT.DISTANCE,
+			        		    HOUR_REPORT.DRIVING,
+			        		    HOUR_REPORT.WAITING,
+			        		    HOUR_REPORT.FUEL)
+			         				.from(HOUR_REPORT)
+			         				.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(HOUR_REPORT.VEHICLE_ID))
+			         				.where(HOUR_REPORT.TS
+			         				.between(new Timestamp(moment.toEpochSecond()*1000), new Timestamp(moment.plusDays(6).plusHours(23).toEpochSecond()*1000))
+			         				.and(VEHICLE_DATA.TYPE.eq(type)))
+			         				.fetch().stream()
+						        	.collect(Collectors.toSet())
+						        	.stream()
+						        	.map(t->{
+									        	 ZonedDateTime tmpTime = ZonedDateTime.ofInstant(t.getValue(HOUR_REPORT.TS).toInstant(), zoneId);
+									        	 if(tmpTime.getHour()==0) {//если отчет полуночный, то он относится к предыдущему дню
+									        		 tmpTime = tmpTime.minusDays(1L);
+									        	 }
+									        	 tmpTime = tmpTime.minusHours(tmpTime.getHour());
+									        	 t.setValue(HOUR_REPORT.TS, new Timestamp(tmpTime.toEpochSecond()*1000));
+									        	 return t; 
+									     })//группируем по дням
+									.collect(Collectors.groupingBy(Record11<Timestamp, String, String, String, 
+									        		 									String, String, String, Integer, 
+									        		 										Integer, Integer, Float>::value1))
+									.entrySet()
+						        	.stream()
+						        	.map(p->{
+						        			return p.getValue()
+						        					.stream()//группируем по номерам ТС
+						        					.collect(Collectors.groupingBy(Record11<Timestamp, String, String, String, 
+									        		 									String, String, String, Integer, 
+									        		 										Integer, Integer, Float>::value2))
+						        					.entrySet()
+						        					.stream()
+						        					.map(s->{//для каждой машины определяем пробег и т.д. исходя из коллекции List<Record11> почасовых отчеттов
+						        						ReportForVehicle rfv = new ReportForVehicle(null, 0, null);
+						        						
+						        						rfv.setDistance(s.getValue()//считаем пробег за день
+						        										.stream()
+						        										.map(q->q.getValue(HOUR_REPORT.DISTANCE))
+						        										.reduce((x,y)->x + y).get());
+						        						rfv.setTotalDriving(s.getValue()//считаем время в пути
+								        								.stream()
+								        								.map(q->q.getValue(HOUR_REPORT.DRIVING))
+								        								.reduce((x,y)->x + y).get());
+						        						rfv.setTotalWaiting(s.getValue()//считаем время простоя
+								        								.stream()
+								        								.map(q->q.getValue(HOUR_REPORT.WAITING))
+								        								.reduce((x,y)->x + y).get());
+						        						 Record11<Timestamp, String, String, String, 
+						        						 				String, String, String, Integer, 
+						        						 					Integer, Integer, Float> tmpRec = s.getValue().get(0);
+														
+														rfv.setTsFrom(tmpRec.getValue(HOUR_REPORT.TS).getTime()/1000);
+														rfv.setTsTo(rfv.getTsFrom()+24*3600);
+														rfv.setVehicle(new Vehicle(tmpRec.getValue(VEHICLE_DATA.TYPE),
+																					tmpRec.getValue(VEHICLE_DATA.UID),
+																					tmpRec.getValue(VEHICLE_DATA.NUMBER),
+																					tmpRec.getValue(VEHICLE_DATA.OWNER),
+																					tmpRec.getValue(VEHICLE_DATA.MODEL),
+																					tmpRec.getValue(VEHICLE_DATA.DESCRIPTION)
+																));						        						
+						        						return rfv;
+						        					}).collect(Collectors.toList());
+						        		})
+						        	.sorted(new Comparator<List<ReportForVehicle>>(){
+										@Override
+										public int compare(List<ReportForVehicle> a, List<ReportForVehicle> b) {
+												if (a.get(0).getTsFrom() < b.get(0).getTsFrom()) return -1;				
+												if (a.get(0).getTsFrom() > b.get(0).getTsFrom()) return 1;
+												return 0;
+											}
+						        		})
+						        	.collect(Collectors.toList());
+						        	
+				//определим и заполним недостающие часовые отчеты пустыми 
+				//объектами для соблюдения ранее принятого соглашения по  JSON 
+					         
+				//Set меток времени в получившихся недельном отчете
+				Set<Long> rfvReportTimestampSet = rfvReport.stream().map(p->p.get(0).getTsFrom()).collect(Collectors.toSet());			         
+				//пытаемся добавить в набор требуемые метки отчета. 
+				//там где это получается нужно добавить пропуск в основной отчет
+				for(int i = 0; i < 7; i++) {
+					if (rfvReportTimestampSet.add(moment.minusHours(moment.getHour()).toEpochSecond() + 3600*24*i)) {
+						rfvReport.add(i, new ArrayList<>());
+					}
+				}	
+				return toAnnotatedJson(rfvReport);
+			}
+		}
+	/**
+	 * Generates reports in DB hourly for each vehicle
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 */
+
+	public static void createHourlyReportForDay(long ts) throws ClassNotFoundException, SQLException {
+		ZonedDateTime moment = ZonedDateTime.ofInstant(Instant.ofEpochMilli(ts*1000), ZoneId.systemDefault());
+		ts = moment.minusHours(moment.getHour()-1)
+					.minusMinutes(moment.getMinute())
+					.minusSeconds(moment.getSecond())
+					.toEpochSecond();
+		for (int i = 0; i < 24; i++) {
+			createHourlyReport(ts + i*3600);
+		}
+	}	
+	
+	/**
+	 * @throws DocumentException 
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 * This method generates a report for several vehicles of the same type.
+	 */
+	
+	public static void createCommonPdfReport(long ts_min, long ts_max, String type, OutputStream output)
+												throws DocumentException, ClassNotFoundException, SQLException  {
+		
+		PdfGenerator.generateCommonPdfReport(getReportVehicleList(ts_min, ts_max, type), output, ts_min, ts_max);
+	}
+	
+	
+	/**
+	 * This method generates a report for a specific vehicle.
+	 * @throws SQLException 
+	 * @throws DocumentException 
+	 * @throws ClassNotFoundException 
+	 */
+	public static void createSpecificPdfReport(long ts_min, long ts_max, String number, OutputStream output)
+													throws ClassNotFoundException, DocumentException, SQLException {
+		PdfGenerator.generateSpecificPdfReport(getTrackData(ts_min, ts_max, number), output);
+	}
+	
+	
+	
+	/**
+	 * This method generates List<ReportForVehicle> for time period for vehicle type
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 */
+	
+	public static List<ReportForVehicle> getReportVehicleList(long ts_min, long ts_max, String type)
+													throws ClassNotFoundException, SQLException{
+		try (Connection conn = getConnection()) {
+	         DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);  
+	         return dsl.select(TRACKING_DATA.TIMESTAMP, 
 		 							TRACKING_DATA.VELOCITY, 
 		 							TRACKING_DATA.LATITUDE, 
 		 							TRACKING_DATA.LONGITUDE, 
@@ -659,88 +892,49 @@ public class Trackviewer {
 		 							VEHICLE_DATA.TYPE,
 		 							VEHICLE_DATA.MODEL,
 		 							VEHICLE_DATA.DESCRIPTION)
-      							.from(TRACKING_DATA)
-      								.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(TRACKING_DATA.VEHICLE_UID))
-      								.where(TRACKING_DATA.TIMESTAMP
-		        		 					.between(new Timestamp(tsFrom),
-		        		 								new Timestamp(tsTo))
-      										.and(VEHICLE_DATA.TYPE.eq(type)))
-      											.orderBy(TRACKING_DATA.TIMESTAMP)
-		        		 							.fetch();
-	         return result; 
-		}	
-	}
-
-	
-	/**
-	 * @throws SQLException 
-	 * @throws ClassNotFoundException 
-	 */
-	public static List<ReportForVehicle> getVehicleStatFor(Stream<Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String>> stream) throws ClassNotFoundException, SQLException {
-		Map<String, List<Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String>>> resultByVehicle 
-		= stream.collect(Collectors.groupingBy(Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String>::value8));
-		List<ReportForVehicle>rfvList = new ArrayList<>();
-		Set<String>vehicleUidSet= resultByVehicle.keySet();
-		//List<JsonTrack>jtList = new ArrayList<>();
-		for(Object x:vehicleUidSet) {
-			List<Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String>> recordVehicleList = resultByVehicle.get(x);
-			JsonTrack jt =
-					dataAnalasing(recordVehicleList.stream()
-									.sorted(new Comparator<Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String>>(){
-											@Override
-											public int compare(
-													Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> a,
-													Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> b) {
-												// TODO Auto-generated method stub
-												return a.value7().compareTo(b.value7());
-											}
-			}).collect(Collectors.toList()));
-			rfvList.add(new 
-							ReportForVehicle(jt.getVehicle(), jt.getDistance(), jt.getWaitTrackPoints()
-						)
-					);
+		     						.from(TRACKING_DATA)
+		     							.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(TRACKING_DATA.VEHICLE_UID))
+		     							.where(TRACKING_DATA.TIMESTAMP
+		     							.between(new Timestamp(ts_min*1000), new Timestamp(ts_max*1000))
+		     							.and(VEHICLE_DATA.TYPE.eq(type)))
+				        		 		.fetch()
+				        		 		.stream()
+				        		 		.collect(Collectors.groupingBy(Record12<Timestamp, Short, BigDecimal, BigDecimal, 
+				        		 														Short, Integer, String, String, 
+				        		 															String, String, String, String>::value7))     
+	         							
+	         							.entrySet()
+	         							.stream()
+	         							.map(p->{
+	         								return dataAnalasing(p.getValue()
+						         								.stream()
+						         								.sorted(new Comparator<Record12<Timestamp, Short, BigDecimal, BigDecimal, 
+									        		 														Short, Integer, String, String, 
+									        		 															String, String, String, String>>(){
+																									
+																					@Override
+																					public int compare(
+																						Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> a,
+																						Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> b) {
+																						return a.value1().compareTo(b.value1());
+																					}
+	         								}).collect(Collectors.toList()));
+	         							})
+	         							.map(q->{
+	         								ReportForVehicle rfv = new ReportForVehicle(null, 0, null);
+	         								rfv.setDistance(q.getDistance());
+	         								rfv.setTotalWaiting(q.getWaitTrackPoints().isEmpty()?0:q.getWaitTrackPoints()
+	         					        			.stream()
+	         					        			.map(wp->wp.getWaiting())
+	         					        			.reduce((x,y)->x+y).get());
+	         								rfv.setTotalDriving(q.getSegments().isEmpty()?0:q.getSegments().stream()
+	         					        			.map(seg->seg.getTrackPoints().get(seg.getTrackPoints().size()-1).getTimestamp()-seg.getTrackPoints().get(0).getTimestamp())
+	         					        			.reduce((x,y)->x+y).get().intValue());
+											rfv.setVehicle(q.getVehicle());
+											rfv.setTsFrom(q.getTsFrom());
+											rfv.setTsTo(q.getTsTo());
+	         								return rfv;
+	         							}).collect(Collectors.toList());
 		}
-		return rfvList;
 	}	
-	
-	
-	
-	/**
-	 * Get statistic for last 24 hour for all vehicles
-	 * @throws SQLException 
-	 * @throws ClassNotFoundException 
-	 */
-	public static List<List<ReportForVehicle>> getStatistic24Hour(long tsFrom, long tsTo, String type) throws ClassNotFoundException, SQLException{
-		List<List<ReportForVehicle>> Statistic24HourList = new ArrayList<>();
-		List<Record12<Timestamp,Short,BigDecimal,BigDecimal,Short,Integer,String,String,String,String,String,String>> dayData =
-				getResultByDay(tsFrom, tsTo, type).stream()
-								.sorted(new Comparator<Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String>>(){
-									@Override
-									public int compare(Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> a,
-														Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> b) {		
-										return a.value1().compareTo(b.value1());
-									}
-								}).collect(Collectors.toList());
-		if (dayData.isEmpty()) return Statistic24HourList;
-		for(int i=0;i<24;i++){
-			Timestamp minTs = new Timestamp(tsFrom+i*3600000);
-			Timestamp maxTs = new Timestamp(minTs.getTime()+3600000);
-			Statistic24HourList.add(getVehicleStatFor(dayData.stream().filter(rec->rec.value1().after(minTs)&&rec.value1().before(maxTs))));	
-		}
-		return Statistic24HourList;
-	}
-	/**
-	 * Get statistic for last 24 hour for all vehicles in JSON
-	 * @throws SQLException 
-	 * @throws ClassNotFoundException 
-	 */
-	public static String getStatistic24HourJson(long tsFrom, String type) throws ClassNotFoundException, SQLException {
-		ZonedDateTime moment = ZonedDateTime.ofInstant(Instant.ofEpochMilli(tsFrom*1000), ZoneId.systemDefault());
-		moment = moment.minusHours(moment.getHour()).minusMinutes(moment.getMinute()).minusSeconds(moment.getSecond());
-		
-		
-		return new GsonBuilder()
-				.excludeFieldsWithoutExposeAnnotation()
-				.create().toJson(getStatistic24Hour(moment.toEpochSecond()*1000, moment.plusDays(1).toEpochSecond()*1000, type)); 
-	}
 }

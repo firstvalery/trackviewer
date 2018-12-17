@@ -81,5 +81,13 @@ public class Vehicle {
 		this.model = model;
 		this.description = description;
 	}
+	public Vehicle() {
+		this.type = "";
+		this.uid = "";
+		this.number = "";
+		this.owner = "";
+		this.model = "";
+		this.description = "";
+	}
 
 }

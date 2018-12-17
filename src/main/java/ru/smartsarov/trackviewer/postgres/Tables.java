@@ -6,9 +6,11 @@ package ru.smartsarov.trackviewer.postgres;
 
 import javax.annotation.Generated;
 
+import ru.smartsarov.trackviewer.postgres.tables.HourReport;
 import ru.smartsarov.trackviewer.postgres.tables.RegionRb;
 import ru.smartsarov.trackviewer.postgres.tables.TrackingData;
 import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
+import ru.smartsarov.trackviewer.postgres.tables.WaitPoints;
 
 
 /**
@@ -25,6 +27,11 @@ import ru.smartsarov.trackviewer.postgres.tables.VehicleData;
 public class Tables {
 
     /**
+     * The table <code>public.hour_report</code>.
+     */
+    public static final HourReport HOUR_REPORT = ru.smartsarov.trackviewer.postgres.tables.HourReport.HOUR_REPORT;
+
+    /**
      * The table <code>public.region_rb</code>.
      */
     public static final RegionRb REGION_RB = ru.smartsarov.trackviewer.postgres.tables.RegionRb.REGION_RB;
@@ -38,4 +45,9 @@ public class Tables {
      * The table <code>public.vehicle_data</code>.
      */
     public static final VehicleData VEHICLE_DATA = ru.smartsarov.trackviewer.postgres.tables.VehicleData.VEHICLE_DATA;
+
+    /**
+     * The table <code>public.wait_points</code>.
+     */
+    public static final WaitPoints WAIT_POINTS = ru.smartsarov.trackviewer.postgres.tables.WaitPoints.WAIT_POINTS;
 }
