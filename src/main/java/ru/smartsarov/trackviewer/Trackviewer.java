@@ -309,24 +309,67 @@ public class Trackviewer {
 														result.get(0).getValue(VEHICLE_DATA.DESCRIPTION)));
 			jt.setTsFrom(result.get(0).getValue(TRACKING_DATA.TIMESTAMP).getTime()/1000);
 			jt.setTsTo(result.get(result.size()-1).getValue(TRACKING_DATA.TIMESTAMP).getTime()/1000);
-			//TODO
+			//TODO пересмотреть принцип формирования флага одометра
 			odometerFlag = result.get(0).getValue(TRACKING_DATA.ODOMETER)!=null;
 		}else { 
 			jt.setVehicle(new Vehicle());
 			return jt;
 		}
 		
-		//define temporary instance for saving data outside of cycle
-	    int segmentIndex = 0;    
+		//define temporary instances and variables for saving data outside of cycle 
 	    TrackPoint tmpPt = new TrackPoint((short)0, (short)0, new BigDecimal(0), new BigDecimal(0), 0L, (short)0);  
-
+	    int segmentIndex = 0;  
+	    Double odometer = 0.0;
 	    
-	    Double odometer=0.0;
+	    // Поиск первой точки с координатами, соответствующими критерию достоверности.
+	    // Критерий достоверности: точка принадлежит множеству, состоящему не менее, чем из 2 последовательных точек, 
+	    // удовлетворяющим условию "физичности" скорости перемещения из одной в другую
+	    
+	    int count = 0;
+	    if(result.size()>1) {
+		    for (int i = 1; i < result.size(); i++) {
+		    	tmpPt = new TrackPoint(result.get(i-1).get(TRACKING_DATA.VELOCITY),
+			    		result.get(i-1).get(TRACKING_DATA.DIRECTION),
+			    		result.get(i-1).get(TRACKING_DATA.LONGITUDE),
+			    		result.get(i-1).get(TRACKING_DATA.LATITUDE),
+			    		result.get(i-1).get(TRACKING_DATA.TIMESTAMP).getTime()/1000,
+			    		(short)0);
+		    	
+		    	if (!result.get(i).get(TRACKING_DATA.LATITUDE).equals( tmpPt.getLatitude()) ||
+	     				!result.get(i).get(TRACKING_DATA.LONGITUDE).equals(tmpPt.getLongitude())) {
+		    	 //Creating wpt by result[i]
+		    	   TrackPoint pt = new TrackPoint(result.get(i).get(TRACKING_DATA.VELOCITY),
+		    			   result.get(i).get(TRACKING_DATA.DIRECTION),
+		    			   result.get(i).get(TRACKING_DATA.LONGITUDE),
+		    			   result.get(i).get(TRACKING_DATA.LATITUDE),
+		    			   result.get(i).get(TRACKING_DATA.TIMESTAMP).getTime()/1000,
+		    			   (short)0);    	   
+		    	   long delta = pt.getTimestamp() - tmpPt.getTimestamp();
+		    	   if (delta<=0) continue;// skip iteration
+		    	   
+		    	   count++;
+		    	   
+		    	   if (getDistance(tmpPt, pt)/delta > filterVelocity) {
+		    		   count = 0;
+		    	   }
+		    		 
+		    	   if (count == 1) {
+		    		   count = i - count;
+		    		   break;	   
+		    	   }	   
+		    	   tmpPt = pt;
+		    	}
+		    }    
+	    } else {
+	    	count = 0;
+	    }
+
+	   tmpPt = new TrackPoint((short)0, (short)0, new BigDecimal(0), new BigDecimal(0), 0L, (short)0); 
 	    //Building of track segments     	
-	   for (int i=0; i < result.size(); i++) {
+	   for (int i = count; i < result.size(); i++) {
 	       if (!result.get(i).get(TRACKING_DATA.LATITUDE).equals( tmpPt.getLatitude()) ||
 	         				!result.get(i).get(TRACKING_DATA.LONGITUDE).equals(tmpPt.getLongitude())) {// check for new coordinates
-
+	    	   
 	    	   //Creating wpt by result[i]
 	    	   TrackPoint pt = new TrackPoint(result.get(i).get(TRACKING_DATA.VELOCITY),
 	    			   result.get(i).get(TRACKING_DATA.DIRECTION),
@@ -340,7 +383,7 @@ public class Trackviewer {
 	    	   //filtering unreal points 
 	         	if (i > 0) {
 	         			tmpOdometer = getDistance(tmpPt, pt);		
-		         		if(delta==0 || tmpOdometer/delta > filterVelocity) {
+		         		if(delta<=0 || tmpOdometer/delta > filterVelocity) {
 		         			continue; // skip iteration
 		         	}
 	         	}else {
@@ -355,7 +398,6 @@ public class Trackviewer {
 	         	}
 	         	
 	         	//creating new segment
-	         	
 	         	if(delta > waitPointDuration){//suspense time constant        		
 	         		segmentIndex++;     			
 	         		jt.getSegments().add(new Segment());//new segment building
