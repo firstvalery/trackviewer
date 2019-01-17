@@ -19,13 +19,15 @@ import javax.ws.rs.core.StreamingOutput;
 
 import com.itextpdf.text.DocumentException;
 
-
-
-
 @Path("/")
 @Produces(MediaType.TEXT_XML + ";charset=UTF-8")
 public class TrackviewerService
-{
+{	
+	/**
+	 *@api {get} / Request test information
+	 * @apiName GetVehicle
+	 * @apiGroup Vehicle
+	 */
 	@GET
 	@Path("/")
 	@Produces(MediaType.TEXT_HTML + ";charset=UTF-8")
@@ -34,6 +36,7 @@ public class TrackviewerService
 		InputStream is = this.getClass().getResourceAsStream("/static/index.html");
     	return Response.status(Response.Status.OK).entity(is).build();
     }
+	
 	@GET
 	@Path("/xsd_scheme")
 	@Produces(MediaType.TEXT_XML + ";charset=UTF-8")
@@ -43,7 +46,11 @@ public class TrackviewerService
     	return Response.status(Response.Status.OK).entity(is).build();
     }
 	
-	
+	/**
+	 *@api {get} /vehicle/show Request vehicle information
+	 * @apiName GetVehicle
+	 * @apiGroup Vehicle
+	 */
 	@GET
 	@Path("/vehicle/show")
 	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
@@ -59,7 +66,14 @@ public class TrackviewerService
 
     }
 	
-	
+	/**
+	 *@api {get} /track/get_json Request track information
+	 * @apiName GetTrackInfo
+	 * @apiGroup Track
+	 * @apiParam {Number} min_ts min timestamp
+	 * @apiParam {Number} max_ts max timestamp
+	 * @apiParam {String} vehicle_number State registration number of the vehicle
+	 */
 	@GET
 	@Path("/track/get_json")
 	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
@@ -76,6 +90,13 @@ public class TrackviewerService
 		}
     }
 	
+	/**
+	 *@api {get} /track/timeline Request daily report information
+	 * @apiName GetDayReport
+	 * @apiGroup Track
+	 * @apiParam {Number} ts timestamp of a day
+	 * @apiParam {String} type vehicle type
+	 */
 	@GET
 	@Path("/track/timeline")
 	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
@@ -92,7 +113,12 @@ public class TrackviewerService
     }
 	
 	
-	
+	/**
+	 *@api {post} /data/insert Request for inserting new data
+	 * @apiName InsertNewData
+	 * @apiGroup Data
+	 * @apiParam {String} jsonRequest JSON formated data from trackers
+	 */
 	@POST
 	@Path("/data/insert")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -106,6 +132,13 @@ public class TrackviewerService
 			}
 	}
 	
+	/**
+	 *@api {get} /track/timeline/get_week Request weekly report information
+	 * @apiName GetWeekReport
+	 * @apiGroup Track
+	 * @apiParam {Number} ts timestamp of a day
+	 * @apiParam {String} type vehicle type
+	 */
 	@GET
 	@Path("/track/timeline/get_week")
 	@Produces(MediaType.APPLICATION_JSON + ";charset=UTF-8")
@@ -154,7 +187,14 @@ public class TrackviewerService
 		}
     }
 	
-	
+	/**
+	 *@api {get} /track/report/commonPdf Request common PDF report
+	 * @apiName getCommonPdf
+	 * @apiGroup Track
+	 * @apiParam {Number} ts_min min timestamp
+	 * @apiParam {Number} ts_max max timestamp
+	 * @apiParam {String} type vehicle type
+	 */
 	@GET
 	@Path("/track/report/commonPdf")
 	@Produces({"application/pdf"})
@@ -179,6 +219,15 @@ public class TrackviewerService
 		}
 	}  
 	
+	
+	/**
+	 *@api {get} /track/report/specificPdf Request specific PDF report
+	 * @apiName getSpecificPdf
+	 * @apiGroup Track
+	 * @apiParam {Number} ts_min min timestamp
+	 * @apiParam {Number} ts_max max timestamp
+	 * @apiParam {String} type vehicle type
+	 */
 	@GET
 	@Path("/track/report/specificPdf")
 	@Produces({"application/pdf"})
