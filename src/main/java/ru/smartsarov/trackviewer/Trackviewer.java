@@ -30,7 +30,6 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.itextpdf.text.DocumentException;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
@@ -858,11 +857,22 @@ public class Trackviewer {
 	 * @throws ClassNotFoundException 
 	 * This method generates a report for several vehicles of the same type.
 	 */
-	
 	public static void createCommonPdfReport(long ts_min, long ts_max, String type, OutputStream output)
 												throws DocumentException, ClassNotFoundException, SQLException  {
 		
 		PdfGenerator.generateCommonPdfReport(getReportVehicleList(ts_min, ts_max, type), output, ts_min, ts_max);
+	}
+	
+	/**
+	 * @throws DocumentException 
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 * This method generates a report for several vehicles by number list
+	 */
+	public static void createCommonPdfReportByNumberList(long ts_min, long ts_max, String numlist, OutputStream output)
+												throws DocumentException, ClassNotFoundException, SQLException  {
+		
+		PdfGenerator.generateCommonPdfReport(getReportVehicleListByNumberList(ts_min, ts_max, numlist), output, ts_min, ts_max);
 	}
 	
 	
@@ -884,12 +894,12 @@ public class Trackviewer {
 	 * @throws SQLException 
 	 * @throws ClassNotFoundException 
 	 */
-	
-	public static List<ReportForVehicle> getReportVehicleList(long ts_min, long ts_max, String type)
-													throws ClassNotFoundException, SQLException{
+	public static List<ReportForVehicle> getReportVehicleList(long ts_min, long ts_max, String type) 
+																	throws ClassNotFoundException, SQLException {
+		
 		try (Connection conn = getConnection()) {
 	         DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);  
-	         return dsl.select(TRACKING_DATA.TIMESTAMP, 
+	         return buildReportVehicleList(dsl.select(TRACKING_DATA.TIMESTAMP, 
 		 							TRACKING_DATA.VELOCITY, 
 		 							TRACKING_DATA.LATITUDE, 
 		 							TRACKING_DATA.LONGITUDE, 
@@ -906,44 +916,88 @@ public class Trackviewer {
 		     							.where(TRACKING_DATA.TIMESTAMP
 		     							.between(new Timestamp(ts_min*1000), new Timestamp(ts_max*1000))
 		     							.and(VEHICLE_DATA.TYPE.eq(type)))
-				        		 		.fetch()
-				        		 		.stream()
-				        		 		.collect(Collectors.groupingBy(Record12<Timestamp, Short, BigDecimal, BigDecimal, 
-				        		 														Short, Integer, String, String, 
-				        		 															String, String, String, String>::value7))     
-	         							
-	         							.entrySet()
-	         							.stream()
-	         							.map(p->{
-	         								return dataAnalasing(p.getValue()
-						         								.stream()
-						         								.sorted(new Comparator<Record12<Timestamp, Short, BigDecimal, BigDecimal, 
-									        		 														Short, Integer, String, String, 
-									        		 															String, String, String, String>>(){
-																									
-																					@Override
-																					public int compare(
-																						Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> a,
-																						Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> b) {
-																						return a.value1().compareTo(b.value1());
-																					}
-	         								}).collect(Collectors.toList()));
-	         							})
-	         							.map(q->{
-	         								ReportForVehicle rfv = new ReportForVehicle(null, 0, null);
-	         								rfv.setDistance(q.getDistance());
-	         								rfv.setTotalWaiting(q.getWaitTrackPoints().isEmpty()?0:q.getWaitTrackPoints()
-	         					        			.stream()
-	         					        			.map(wp->wp.getWaiting())
-	         					        			.reduce((x,y)->x+y).get());
-	         								rfv.setTotalDriving(q.getSegments().isEmpty()?0:q.getSegments().stream()
-	         					        			.map(seg->seg.getTrackPoints().get(seg.getTrackPoints().size()-1).getTimestamp()-seg.getTrackPoints().get(0).getTimestamp())
-	         					        			.reduce((x,y)->x+y).get().intValue());
-											rfv.setVehicle(q.getVehicle());
-											rfv.setTsFrom(q.getTsFrom());
-											rfv.setTsTo(q.getTsTo());
-	         								return rfv;
-	         							}).collect(Collectors.toList());
+				        		 		.fetch());
 		}
 	}	
+	
+	/**
+	 * This method generates List<ReportForVehicle> for time period for number List numList separated by comma
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 */
+	public static List<ReportForVehicle> getReportVehicleListByNumberList(long ts_min, long ts_max, String numList) 
+																	throws ClassNotFoundException, SQLException {
+		
+		try (Connection conn = getConnection()) {
+			 List<String> numArr = Arrays.asList(numList.toLowerCase().replaceAll("\\s", "").split(",")); 
+	         DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);  
+	         return buildReportVehicleList(dsl.select(TRACKING_DATA.TIMESTAMP, 
+		 							TRACKING_DATA.VELOCITY, 
+		 							TRACKING_DATA.LATITUDE, 
+		 							TRACKING_DATA.LONGITUDE, 
+		 							TRACKING_DATA.DIRECTION, 
+		 							TRACKING_DATA.ODOMETER,
+		 							VEHICLE_DATA.NUMBER,
+		 							VEHICLE_DATA.UID,
+		 							VEHICLE_DATA.OWNER,
+		 							VEHICLE_DATA.TYPE,
+		 							VEHICLE_DATA.MODEL,
+		 							VEHICLE_DATA.DESCRIPTION)
+		     						.from(TRACKING_DATA)
+		     							.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(TRACKING_DATA.VEHICLE_UID))
+		     							.where(TRACKING_DATA.TIMESTAMP
+		     							.between(new Timestamp(ts_min*1000), new Timestamp(ts_max*1000))
+		     							.and(VEHICLE_DATA.NUMBER.in(numArr)))
+				        		 		.fetch());
+		}
+	}	
+	
+	
+	/**
+	 * This method builds List<ReportForVehicle> for time period for vehicle type
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 */
+	public static List<ReportForVehicle> buildReportVehicleList(Result<Record12<Timestamp, Short, BigDecimal,
+																	BigDecimal, Short, Integer, String,
+																		String, String, String, String, String>> result){
+			return  result
+					.stream()
+    		 		.collect(Collectors.groupingBy(Record12<Timestamp, Short, BigDecimal, BigDecimal, 
+    		 														Short, Integer, String, String, 
+    		 															String, String, String, String>::value7))     
+						
+						.entrySet()
+						.stream()
+						.map(p->{
+							return dataAnalasing(p.getValue()
+	         								.stream()
+	         								.sorted(new Comparator<Record12<Timestamp, Short, BigDecimal, BigDecimal, 
+				        		 														Short, Integer, String, String, 
+				        		 															String, String, String, String>>(){
+																				
+																@Override
+																public int compare(
+																	Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> a,
+																	Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> b) {
+																	return a.value1().compareTo(b.value1());
+																}
+							}).collect(Collectors.toList()));
+						})
+						.map(q->{
+							ReportForVehicle rfv = new ReportForVehicle(null, 0, null);
+							rfv.setDistance(q.getDistance());
+							rfv.setTotalWaiting(q.getWaitTrackPoints().isEmpty()?0:q.getWaitTrackPoints()
+				        			.stream()
+				        			.map(wp->wp.getWaiting())
+				        			.reduce((x,y)->x+y).get());
+							rfv.setTotalDriving(q.getSegments().isEmpty()?0:q.getSegments().stream()
+				        			.map(seg->seg.getTrackPoints().get(seg.getTrackPoints().size()-1).getTimestamp()-seg.getTrackPoints().get(0).getTimestamp())
+				        			.reduce((x,y)->x+y).get().intValue());
+						rfv.setVehicle(q.getVehicle());
+						rfv.setTsFrom(q.getTsFrom());
+						rfv.setTsTo(q.getTsTo());
+							return rfv;
+						}).collect(Collectors.toList());
+		}
 }

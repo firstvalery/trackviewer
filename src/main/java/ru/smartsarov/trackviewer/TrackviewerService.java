@@ -219,6 +219,38 @@ public class TrackviewerService
 		}
 	}  
 	
+	/**
+	 *@api {get} /track/report/commonPdf Request common PDF report
+	 * @apiName getCommonPdf
+	 * @apiGroup Track
+	 * @apiParam {Number} ts_min min timestamp
+	 * @apiParam {Number} ts_max max timestamp
+	 * @apiParam {String} numList number list
+	 */
+	@GET
+	@Path("/track/report/commonPdfByNumber")
+	@Produces({"application/pdf"})
+	public StreamingOutput getCommonPdfByNumberList(
+			@QueryParam ("ts_min") long ts_min,
+			@QueryParam ("ts_max") long ts_max,
+    		@QueryParam ("numList") String numList){
+		try {
+		    return new StreamingOutput() {
+		    	@Override
+		        public void write(OutputStream output) throws IOException, WebApplicationException {
+			    	try {
+						Trackviewer.createCommonPdfReportByNumberList(ts_min, ts_max, numList, output);					
+					} catch (DocumentException | ClassNotFoundException | SQLException e) {
+						throw new WebApplicationException();
+					}	
+		        }
+		    };
+		}catch(WebApplicationException e) {
+			//TODO
+			return null;
+		}
+	}  
+	
 	
 	/**
 	 *@api {get} /track/report/specificPdf Request specific PDF report
