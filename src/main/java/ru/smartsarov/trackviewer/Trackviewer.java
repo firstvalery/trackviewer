@@ -49,7 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
+import java.util.stream.Stream;
 
 import ru.smartsarov.trackviewer.JsonTrack.JsonTrack;
 import ru.smartsarov.trackviewer.JsonTrack.ReportForVehicle;
@@ -635,6 +635,7 @@ public class Trackviewer {
 			         				.and(VEHICLE_DATA.TYPE.eq(type)))
 			         				.fetch()
 			         				.stream()
+
 			         				.collect(Collectors.groupingBy(Record15<Timestamp, String, String, String, 
 			         																String, String, String, Integer, 
 			         																	Integer, Integer, Float, BigDecimal, 
@@ -654,8 +655,9 @@ public class Trackviewer {
 														ReportForVehicle rfv = new ReportForVehicle(null,0,null);												 
 														List<WaitTrackPoint> wptList = p.getValue()//создадим список остановок
 														.stream()
-														.map(s->{
-																	if(s.getValue(WAIT_POINTS.WAITING)==null) return null;
+														.map(s->{   
+																	if(s.getValue(WAIT_POINTS.WAITING)==null) 
+																			return null;
 																	WaitTrackPoint wtp = new WaitTrackPoint(
 																			new TrackPoint((short)0,
 																							(short)0,
@@ -666,15 +668,18 @@ public class Trackviewer {
 																										s.getValue(WAIT_POINTS.WAITING));
 																					return wtp;		
 																})
-														.sorted(new Comparator<WaitTrackPoint>() {
+														 .sorted(new Comparator<WaitTrackPoint>() {
 
 															@Override
 															public int compare(WaitTrackPoint a, WaitTrackPoint b) {
+																if(a==null&b!=null)return -1;
+																else if(a!=null&b==null)return 1;
+																else if(a==null && b==null) return 0;
 																if (a.getTrackPoint().getTimestamp()>b.getTrackPoint().getTimestamp())return 1;
 																if (a.getTrackPoint().getTimestamp()<b.getTrackPoint().getTimestamp())return -1;
 																return 0;	
 															}})
-														.collect(Collectors.toList());
+													.collect(Collectors.toList());
 														rfv.setWaitTrackPoints(wptList.contains(null)?null:wptList);
 														
 														Record15<Timestamp, String, String, String, 
