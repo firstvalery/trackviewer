@@ -458,8 +458,8 @@ public class Trackviewer {
 	 * GetDistance between two points
 	 */
 	private static Double getDistance(TrackPoint fromPt, TrackPoint toPt) {
-		return GeometryEngine.geodesicDistanceOnWGS84(new Point(fromPt.getLatitude().doubleValue(),fromPt.getLongitude().doubleValue()), 
-				new Point(toPt.getLatitude().doubleValue(),toPt.getLongitude().doubleValue()));
+		return GeometryEngine.geodesicDistanceOnWGS84(new Point(fromPt.getLongitude().doubleValue(), fromPt.getLatitude().doubleValue()), 
+				new Point(toPt.getLongitude().doubleValue(), toPt.getLatitude().doubleValue()));
 	}
 	
 
