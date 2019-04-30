@@ -33,10 +33,20 @@ public class ThreadListener implements ServletContextListener{
 									.withIdentity("CronTrigger", "group1")	
 				          			.withSchedule(CronScheduleBuilder.cronSchedule("0 0 * * * ?"))
 				                    .build();
+		
+		JobDetail jobCheck = JobBuilder.newJob(CheckBreath.class)
+				.withIdentity("CheckingForBreath", "group2")
+				.build();
+		//триггер каждые 15 минут
+		Trigger triggerForCheck = TriggerBuilder.newTrigger()
+				.withIdentity("CheckTrigger", "group2")	
+      			.withSchedule(CronScheduleBuilder.cronSchedule("0 0,15,30,45 * * * ?"))
+                .build();
 		try {
 			sched = new StdSchedulerFactory().getScheduler();
 			sched.start();
 			sched.scheduleJob(jobOn, trigger);
+			sched.scheduleJob(jobCheck, triggerForCheck);
 			
 		} catch (SchedulerException e) {
 			// TODO Auto-generated catch block

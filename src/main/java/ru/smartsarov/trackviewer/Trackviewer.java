@@ -29,6 +29,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.itextpdf.text.DocumentException;
+import com.sendpulse.restapi.Sendpulse;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -43,13 +44,11 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-
-
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import ru.smartsarov.trackviewer.JsonTrack.JsonTrack;
 import ru.smartsarov.trackviewer.JsonTrack.ReportForVehicle;
@@ -79,6 +78,71 @@ public class Trackviewer {
 		   return conn;
 	} 
 
+	
+	/**Самодигностика!
+	 * Отсылает сообщение по e-mail
+	 */	
+	public static String sendEmail(String comment) {
+		Sendpulse sendpulse = new Sendpulse(Props.get().getProperty("client_id",""), Props.get().getProperty("client_secret",""));
+		  Map<String, Object> from = new HashMap<String, Object>();
+		  //Список от кого
+		  from.put("name", "Track Application");
+		  from.put("email", "service@100gorodov.ru");
+		 //список адресатов
+		  ArrayList<Map<String, Object>> to = new ArrayList<Map<String, Object>>();
+		  //Данные адресата
+		  Map<String, Object> elementto = new HashMap<String, Object>();
+		  elementto.put("name", "mr. Kalachev");
+		  elementto.put("email", "testkalach@gmail.com");
+		  to.add(elementto);
+		  //Данные самого письма
+		  Map<String, Object> emaildata = new HashMap<String, Object>();
+		  emaildata.put("html", comment);
+		  emaildata.put("text", comment);
+		  emaildata.put("subject","Проблема с работой сервиса архивного трэкинга");
+		  emaildata.put("from",from);
+		  emaildata.put("to",to);
+		  //отправляем
+		  Map<String, Object> result = sendpulse.smtpSendMail(emaildata);
+		  return ("Result: " + result);	
+	}
+	
+	
+	/**
+	 *Получим из таблицы TrackingData последнюю запись. Если данные не приходят в течение 15 минут, то вызывает
+	 *метод для отправки сообщения по почте 
+	 */
+	public static void checkForBreath() {
+		try (Connection conn = getConnection()) {
+	        DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);  
+	        Record1<Timestamp> res = dsl.select(DSL.max(TRACKING_DATA.TIMESTAMP))
+	         	.from(TRACKING_DATA)
+	         	.fetchOne();
+	        
+	        //получим время последней метки времени
+	        if(res!=null) {
+	        	Timestamp lastTimestamp = res.get("max", Timestamp.class);
+	        	//если Timestamp null
+	        	if(lastTimestamp ==null) {
+	        		sendEmail("Ошибка выборки В БД!"); 
+	        		return;
+	        	}
+	        	//если за 15 минут ничего не приходило, то отошлем сообщение по почте
+	        	if(lastTimestamp.getTime()/1000 + 900 < Instant.now().getEpochSecond()) {
+	        		sendEmail(String.format("Сервер не получает данные с: %s!", lastTimestamp)); 
+	        	}
+	        	return;
+	        }//res ==null
+	        sendEmail("Ошибка выборки В БД!"); 
+		}	
+		catch(ClassNotFoundException | SQLException e) {
+			sendEmail(e.toString()); 
+		}
+	}
+	
+	
+	
+	
 	
 	
 	/**
@@ -1005,4 +1069,22 @@ public class Trackviewer {
 							return rfv;
 						}).collect(Collectors.toList());
 		}
+	
+	/**
+	 * Метод возвращает список типов ТС
+	 * @throws SQLException 
+	 * @throws ClassNotFoundException 
+	 */
+	public static List<String> getVehicleTypes() throws ClassNotFoundException, SQLException{
+		try (Connection conn = getConnection()) {
+			return DSL.using(conn, SQLDialect.POSTGRES_10).select(VEHICLE_DATA.TYPE)
+			.from(VEHICLE_DATA)
+			.groupBy(VEHICLE_DATA.TYPE)
+			.fetch()
+			.stream()
+			.map(i->new String(i.get(VEHICLE_DATA.TYPE)))
+			.sorted()
+			.collect(Collectors.toList());
+		}
+	}
 }
