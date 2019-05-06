@@ -51,7 +51,7 @@ public class TrackviewerService
     {
 
 				try {
-						return Response.status(Response.Status.OK).entity(Trackviewer.getVehicleList()).build();
+						return Response.status(Response.Status.OK).entity(new Gson().toJson(Trackviewer.getVehicleList())).build();
 					} catch (ClassNotFoundException | SQLException e) {
 						// TODO Auto-generated catch block
 						return Response.status(Response.Status.OK).entity(e.toString()).build();

@@ -11,10 +11,9 @@ import ru.smartsarov.trackviewer.postgres.tables.records.HourReportRecord;
 import ru.smartsarov.trackviewer.postgres.tables.records.RegionRbRecord;
 
 import org.jooq.DSLContext;
-import org.jooq.JSONFormat;
 import org.jooq.Result;
 import org.jooq.SQLDialect;
-import org.jooq.JSONFormat.RecordFormat;
+
 
 import org.jooq.Record1;
 import org.jooq.Record11;
@@ -55,8 +54,10 @@ import ru.smartsarov.trackviewer.JsonTrack.ReportForVehicle;
 import ru.smartsarov.trackviewer.JsonTrack.Segment;
 import ru.smartsarov.trackviewer.JsonTrack.TrackPoint;
 import ru.smartsarov.trackviewer.JsonTrack.WaitTrackPoint;
+import ru.smartsarov.trackviewer.JsonTrack.VehicleModel;
 import ru.smartsarov.trackviewer.jsoninsert.JsonInsert;
 import ru.smartsarov.trackviewer.jsoninsert.Vehicle;
+
 
 
 public class Trackviewer {
@@ -164,19 +165,32 @@ public class Trackviewer {
 
 		boolean commitFl = false;
 		
-		//build set of vehicle
+		//создаем набор записей для таблицы ТС из приходящего JSON
 		Set<VehicleDataRecord> vehicleDataRecordSet = incomingDataList.stream()
-												  .filter(j->j.getVehicle()!=null && j.getVehicle().getNumber()!=null && j.getVehicle().getUid()!=null)
-												  .map(j->{
-													  return new VehicleDataRecord(0, 
-															j.getVehicle().getUid(),
-															j.getVehicle().getNumber().toLowerCase().replaceAll("\\s", ""),			
-															j.getVehicle().getType(),
-															j.getVehicle().getOwner(),
-															j.getVehicle().getModel(),
-															j.getVehicle().getDescription());
-												    })
-												  .collect(Collectors.toSet());
+				//отфильтруем все JSON где нет данных по номеру машины, UID трекера и метки времени
+				  .filter(j->j.getVehicle()!=null && j.getVehicle().getNumber()!=null 
+				  											&& j.getVehicle().getUid()!=null && j.getTime()!=null)
+				  //сгруппируем по гос номеру
+				  .collect(Collectors.groupingBy(j->j.getVehicle().getNumber().toLowerCase().replaceAll("\\s", "")))
+				  .entrySet()
+				  .stream()
+				  .map(j->{//VehicleDataRecord ТС с максимальной меткой времени для каждой машины
+					  return new VehicleDataRecord(0, 
+							j.getValue().get(0).getVehicle().getUid(),
+							j.getValue().get(0).getVehicle().getNumber().toLowerCase().replaceAll("\\s", ""),			
+							j.getValue().get(0).getVehicle().getType(),
+							j.getValue().get(0).getVehicle().getOwner(),
+							j.getValue().get(0).getVehicle().getModel(),
+							j.getValue().get(0).getVehicle().getDescription(),
+							//налету ищем максимальную метку времени для данной машины в пришедшем пакете
+							new Timestamp(j.getValue().stream().max(new Comparator<JsonInsert>() {
+								@Override
+								public int compare(JsonInsert a, JsonInsert b) {
+									return a.getTime().compareTo(b.getTime());
+								}
+							}).get().getTime()*1000)) ;
+				    })
+				  .collect(Collectors.toSet());
 		
 		//build set of region
 		Set<RegionRbRecord> regionRbRecordSet = incomingDataList.stream()
@@ -215,28 +229,40 @@ public class Trackviewer {
 			try (Connection conn = getConnection()){
 				DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);    
 
-				//очистим набор для записи данных машин от имеющихся в базе
+				//Получаем набор записей данных машин имеющихся в базе
 				Result<VehicleDataRecord> vehicleDataRecordResult = dsl.selectFrom(VEHICLE_DATA).fetch();
-				vehicleDataRecordSet.removeAll(vehicleDataRecordResult.stream()
+				
+				//Создадим Map<id TC, последняя метка времени> данных из таблицы машин
+				Map<String, Timestamp>vehTsMap =  vehicleDataRecordResult.stream()
+						.filter(i->i.get(VEHICLE_DATA.LAST_TS)!=null)
+						.collect(Collectors.toMap(VehicleDataRecord::getNumber, VehicleDataRecord::getLastTs, (o,n)->n));
+				
+				
+				
+/*				vehicleDataRecordSet.removeAll(vehicleDataRecordResult.stream()
 																	  .map(j->j.value1(0))
-																	  .collect(Collectors.toList()));
-				//определим набор номеров ТС, которых нет еще в базе
+																	  .collect(Collectors.toList()));*/
+				
+				//определим набор номеров ТС, которые уже есть в базе
 				Set<String> numberSet= vehicleDataRecordResult.stream()
 												.map(j->j.getNumber())
 												.collect(Collectors.toSet());
+				
 				//Добавление в таблицу VEHICLE новых данных	 
 				if(!vehicleDataRecordSet.isEmpty()) {		    	 
 				    vehicleDataRecordSet.stream().forEach(j->{	  	
-				    	if (numberSet.contains(j.getNumber())) {//ТС, для номера которого нет сведений в БД 	
+				    	if (numberSet.contains(j.getNumber())) {//ТС, для номера которого есть сведения в БД, обновим данные  	
 				    		dsl.update(VEHICLE_DATA)
 				    			.set(VEHICLE_DATA.MODEL, j.getModel())
 				    			.set(VEHICLE_DATA.OWNER, j.getOwner())
 				    			.set(VEHICLE_DATA.TYPE, j.getType())
 				    			.set(VEHICLE_DATA.UID, j.getUid())
 				    			.set(VEHICLE_DATA.DESCRIPTION, j.getDescription())
-				    				.where(VEHICLE_DATA.NUMBER.equal(j.getNumber()))
-				    				.execute();
-				    	}else {//ТС, для номера которого есть сведения в БД, обновим данные 
+				    			.set(VEHICLE_DATA.LAST_TS, new Timestamp (Math.max(j.getLastTs().getTime(), 
+				    					vehTsMap.get(j.getNumber())==null?0L:vehTsMap.get(j.getNumber()).getTime())))
+				    			.where(VEHICLE_DATA.NUMBER.equal(j.getNumber()))
+				    			.execute();
+				    	}else {//ТС, для номера которого нет сведений в БД
 				    		j.changed(VEHICLE_DATA.ID, false);
 				    		dsl.insertInto(VEHICLE_DATA)
 				    		.set(j).execute();
@@ -320,28 +346,41 @@ public class Trackviewer {
 	 * @throws SQLException 
 	 * @throws ClassNotFoundException 
 	 */
-	public static String getVehicleList() throws ClassNotFoundException, SQLException  {
+	public static List<VehicleModel> getVehicleList() throws ClassNotFoundException, SQLException  {
 		try (Connection conn = getConnection()) {
-	         DSL.using(conn, SQLDialect.POSTGRES_10).select(VEHICLE_DATA.ID,
+			long currentTime = Instant.now().getEpochSecond();
+			int undefDelay = Integer.valueOf(Props.get().getProperty("undefined", "900"));
+	        return DSL.using(conn, SQLDialect.POSTGRES_10).select(VEHICLE_DATA.ID,
 	        		 VEHICLE_DATA.UID,
 	        		 VEHICLE_DATA.NUMBER,
 	        		 VEHICLE_DATA.OWNER,
 	        		 VEHICLE_DATA.TYPE,
 	        		 VEHICLE_DATA.MODEL,
-	        		 VEHICLE_DATA.DESCRIPTION);
-	         
-	         
-	         return null;
-	         
-	         
-	         
-	         
-	         
-	         
-	         
-	         
-	         /*Result<VehicleDataRecord> result = dsl.selectFrom(VEHICLE_DATA).fetch();      
-	         return result.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));*/
+	        		 VEHICLE_DATA.DESCRIPTION,
+	        		 VEHICLE_DATA.LAST_TS)
+	         .from(VEHICLE_DATA)
+	         .fetch()
+	         .stream()
+	         .map(i->{
+	        	 //определяем цвет по значению последней метки времени
+	        	String color = TrackviewerConstants.RED_COLOR;
+	        	
+				Timestamp ts = i.get(VEHICLE_DATA.LAST_TS); 
+	        	if((ts!=null) && (currentTime - undefDelay < ts.getTime()/1000)) {
+	        		color = TrackviewerConstants.GREEN_COLOR;
+	        	}
+	        	 
+	        	return new VehicleModel(i.get(VEHICLE_DATA.ID),
+	        			i.get(VEHICLE_DATA.UID),
+	        			i.get(VEHICLE_DATA.NUMBER),
+	        			i.get(VEHICLE_DATA.TYPE),
+	        			i.get(VEHICLE_DATA.OWNER),
+	        			i.get(VEHICLE_DATA.MODEL),
+	        			i.get(VEHICLE_DATA.DESCRIPTION),
+	        			color,
+	        			i.get(VEHICLE_DATA.DESCRIPTION)==null?"":i.get(VEHICLE_DATA.DESCRIPTION).replaceAll("\\D+",""),
+	        			ts==null?0L:ts.getTime());
+	         }).collect(Collectors.toList());
 		}
 	}
 	
@@ -642,12 +681,13 @@ public class Trackviewer {
 	        	 if(!jt.getWaitTrackPoints().isEmpty()) {//if not empty  
 	        		 lastWaitpoints_id++;
 	        		 for(WaitTrackPoint wp: jt.getWaitTrackPoints()){
-	        			 WaitPointsRecord tmpRec=new WaitPointsRecord(0L,//Long id
+	        			 WaitPointsRecord tmpRec=new WaitPointsRecord(
 							        new Timestamp(wp.getTrackPoint().getTimestamp()*1000),//Timestamp ts,
 							        wp.getTrackPoint().getLongitude(),//BigDecimal lng
 							        wp.getTrackPoint().getLatitude(),//BigDecimal lat,
 							        wp.getWaiting(),//Integer waiting,
-							        lastWaitpoints_id//lastWaitpoints_id//Integer waitpointsId
+							        lastWaitpoints_id,//lastWaitpoints_id//Integer waitpointsId,
+							        0L//Long id
 							        );
 	        			 tmpRec.changed(WAIT_POINTS.ID, false);
 	        			 waitPointsList.add(tmpRec);
@@ -662,14 +702,16 @@ public class Trackviewer {
 	        			.reduce((x,y)->x+y).get();
 	        	//begin to add batch for hour Report table
 	        	 //parse jt
-	        	 HourReportRecord tmpHrr = new HourReportRecord(0L,//Long id, 
+	        	 HourReportRecord tmpHrr = new HourReportRecord(
 											        			 new Timestamp(ts),//Timestamp ts, 
 											        			 vehicleDataMap.get(jt.getVehicle().getNumber()),//Integer vehicleId, 
 											        			 jt.getDistance(),//Integer distance, 
 											        			 totalWaiting,// Integer waiting, 
 											        			 totalDriving,// Integer driving, 
 											        			 jt.getWaitTrackPoints().isEmpty()?0:lastWaitpoints_id,//Integer waitpointsId, 
-											        			 0.0F);//Float fuel);
+											        			 0.0F,//Float fuel
+											        			 0L//Long id, );
+											        			 );
 	        	 tmpHrr.changed(HOUR_REPORT.ID, false);
 	        	 hourReportList.add(tmpHrr);
 	         }

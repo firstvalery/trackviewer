@@ -1,6 +1,6 @@
 package ru.smartsarov.trackviewer.JsonTrack;
 
-public class VehicleData {
+public class VehicleModel {
 	private int id;
 	private String uid;
 	private String number;
@@ -71,7 +71,7 @@ public class VehicleData {
 	public void setTs(long ts) {
 		this.ts = ts;
 	}
-	public VehicleData(int id, String uid, String number, String type, String owner, String model, String description,
+	public VehicleModel(int id, String uid, String number, String type, String owner, String model, String description,
 			String color, String garageNum, long ts) {
 		this.id = id;
 		this.uid = uid;
@@ -84,7 +84,7 @@ public class VehicleData {
 		this.garageNum = garageNum;
 		this.ts = ts;
 	}
-	public VehicleData() {
+	public VehicleModel() {
 		this.id = 0;
 		this.uid = "";
 		this.number = "";

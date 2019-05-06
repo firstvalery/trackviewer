@@ -14,7 +14,6 @@ import javax.annotation.Generated;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
-import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Schema;
@@ -24,7 +23,6 @@ import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 
-import ru.smartsarov.trackviewer.postgres.Indexes;
 import ru.smartsarov.trackviewer.postgres.Keys;
 import ru.smartsarov.trackviewer.postgres.Public;
 import ru.smartsarov.trackviewer.postgres.tables.records.WaitPointsRecord;
@@ -43,7 +41,7 @@ import ru.smartsarov.trackviewer.postgres.tables.records.WaitPointsRecord;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class WaitPoints extends TableImpl<WaitPointsRecord> {
 
-    private static final long serialVersionUID = -543167131;
+    private static final long serialVersionUID = 935993937;
 
     /**
      * The reference instance of <code>public.wait_points</code>
@@ -57,11 +55,6 @@ public class WaitPoints extends TableImpl<WaitPointsRecord> {
     public Class<WaitPointsRecord> getRecordType() {
         return WaitPointsRecord.class;
     }
-
-    /**
-     * The column <code>public.wait_points.id</code>.
-     */
-    public final TableField<WaitPointsRecord, Long> ID = createField("id", org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(org.jooq.impl.DSL.field("nextval('wait_points_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
 
     /**
      * The column <code>public.wait_points.ts</code>.
@@ -87,6 +80,11 @@ public class WaitPoints extends TableImpl<WaitPointsRecord> {
      * The column <code>public.wait_points.waitpoints_id</code>.
      */
     public final TableField<WaitPointsRecord, Integer> WAITPOINTS_ID = createField("waitpoints_id", org.jooq.impl.SQLDataType.INTEGER, this, "");
+
+    /**
+     * The column <code>public.wait_points.id</code>.
+     */
+    public final TableField<WaitPointsRecord, Long> ID = createField("id", org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(org.jooq.impl.DSL.field("nextval('wait_points_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
 
     /**
      * Create a <code>public.wait_points</code> table reference
@@ -127,14 +125,6 @@ public class WaitPoints extends TableImpl<WaitPointsRecord> {
     @Override
     public Schema getSchema() {
         return Public.PUBLIC;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.WAIT_POINTS_PKEY);
     }
 
     /**

@@ -13,7 +13,6 @@ import javax.annotation.Generated;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
-import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Schema;
@@ -23,7 +22,6 @@ import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 
-import ru.smartsarov.trackviewer.postgres.Indexes;
 import ru.smartsarov.trackviewer.postgres.Keys;
 import ru.smartsarov.trackviewer.postgres.Public;
 import ru.smartsarov.trackviewer.postgres.tables.records.HourReportRecord;
@@ -42,7 +40,7 @@ import ru.smartsarov.trackviewer.postgres.tables.records.HourReportRecord;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class HourReport extends TableImpl<HourReportRecord> {
 
-    private static final long serialVersionUID = 163910024;
+    private static final long serialVersionUID = 1824374484;
 
     /**
      * The reference instance of <code>public.hour_report</code>
@@ -56,11 +54,6 @@ public class HourReport extends TableImpl<HourReportRecord> {
     public Class<HourReportRecord> getRecordType() {
         return HourReportRecord.class;
     }
-
-    /**
-     * The column <code>public.hour_report.id</code>.
-     */
-    public final TableField<HourReportRecord, Long> ID = createField("id", org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(org.jooq.impl.DSL.field("nextval('hour_report_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
 
     /**
      * The column <code>public.hour_report.ts</code>.
@@ -96,6 +89,11 @@ public class HourReport extends TableImpl<HourReportRecord> {
      * The column <code>public.hour_report.fuel</code>.
      */
     public final TableField<HourReportRecord, Float> FUEL = createField("fuel", org.jooq.impl.SQLDataType.REAL, this, "");
+
+    /**
+     * The column <code>public.hour_report.id</code>.
+     */
+    public final TableField<HourReportRecord, Long> ID = createField("id", org.jooq.impl.SQLDataType.BIGINT.nullable(false).defaultValue(org.jooq.impl.DSL.field("nextval('hour_report_id_seq'::regclass)", org.jooq.impl.SQLDataType.BIGINT)), this, "");
 
     /**
      * Create a <code>public.hour_report</code> table reference
@@ -136,14 +134,6 @@ public class HourReport extends TableImpl<HourReportRecord> {
     @Override
     public Schema getSchema() {
         return Public.PUBLIC;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.HOUR_REPORT_PKEY);
     }
 
     /**
