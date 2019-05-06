@@ -322,9 +322,26 @@ public class Trackviewer {
 	 */
 	public static String getVehicleList() throws ClassNotFoundException, SQLException  {
 		try (Connection conn = getConnection()) {
-	         DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);  
-	         Result<VehicleDataRecord> result = dsl.selectFrom(VEHICLE_DATA).fetch();      
-	         return result.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));
+	         DSL.using(conn, SQLDialect.POSTGRES_10).select(VEHICLE_DATA.ID,
+	        		 VEHICLE_DATA.UID,
+	        		 VEHICLE_DATA.NUMBER,
+	        		 VEHICLE_DATA.OWNER,
+	        		 VEHICLE_DATA.TYPE,
+	        		 VEHICLE_DATA.MODEL,
+	        		 VEHICLE_DATA.DESCRIPTION);
+	         
+	         
+	         return null;
+	         
+	         
+	         
+	         
+	         
+	         
+	         
+	         
+	         /*Result<VehicleDataRecord> result = dsl.selectFrom(VEHICLE_DATA).fetch();      
+	         return result.formatJSON(new JSONFormat().header(false).recordFormat(RecordFormat.OBJECT));*/
 		}
 	}
 	
