@@ -49,12 +49,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+
 import ru.smartsarov.trackviewer.JsonTrack.JsonTrack;
 import ru.smartsarov.trackviewer.JsonTrack.ReportForVehicle;
 import ru.smartsarov.trackviewer.JsonTrack.Segment;
 import ru.smartsarov.trackviewer.JsonTrack.TrackPoint;
 import ru.smartsarov.trackviewer.JsonTrack.WaitTrackPoint;
 import ru.smartsarov.trackviewer.JsonTrack.VehicleModel;
+import ru.smartsarov.trackviewer.JsonTrack.VehiclesResult;
 import ru.smartsarov.trackviewer.jsoninsert.JsonInsert;
 import ru.smartsarov.trackviewer.jsoninsert.Vehicle;
 
@@ -346,11 +348,13 @@ public class Trackviewer {
 	 * @throws SQLException 
 	 * @throws ClassNotFoundException 
 	 */
-	public static List<VehicleModel> getVehicleList() throws ClassNotFoundException, SQLException  {
+	public static VehiclesResult getVehicleList() throws ClassNotFoundException, SQLException  {
 		try (Connection conn = getConnection()) {
 			long currentTime = Instant.now().getEpochSecond();
 			int undefDelay = Integer.valueOf(Props.get().getProperty("undefined", "900"));
-	        return DSL.using(conn, SQLDialect.POSTGRES_10).select(VEHICLE_DATA.ID,
+			int passiveDays = Integer.valueOf(Props.get().getProperty("passive", "3"));
+	       
+			List<VehicleModel> allVehicles = DSL.using(conn, SQLDialect.POSTGRES_10).select(VEHICLE_DATA.ID,
 	        		 VEHICLE_DATA.UID,
 	        		 VEHICLE_DATA.NUMBER,
 	        		 VEHICLE_DATA.OWNER,
@@ -380,7 +384,20 @@ public class Trackviewer {
 	        			color,
 	        			i.get(VEHICLE_DATA.DESCRIPTION)==null?"":i.get(VEHICLE_DATA.DESCRIPTION).replaceAll("\\D+",""),
 	        			ts==null?0L:ts.getTime());
-	         }).collect(Collectors.toList());
+	         }).sorted(new Comparator<VehicleModel>() {
+				@Override
+				public int compare(VehicleModel a, VehicleModel b) {
+					if(a.getNumber()==null||b.getNumber()==null) return 0;
+					return a.getNumber().compareTo(b.getNumber());
+				}	 
+	         })
+	         .collect(Collectors.toList());
+			
+			 List<VehicleModel> active= allVehicles.stream()
+					 				 .filter(i->i.getTs()/1000> currentTime - passiveDays*24*3600)
+					 				 .collect(Collectors.toList());
+			 allVehicles.removeAll(active);
+			 return new VehiclesResult(active, allVehicles);
 		}
 	}
 	
