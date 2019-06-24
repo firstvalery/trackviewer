@@ -268,7 +268,7 @@ public class PdfGenerator {
 	/**
 	 * TrackPoint to String for geocoder
 	 */
-	private static String trackPointToGeo(TrackPoint tp) {
+	public static String trackPointToGeo(TrackPoint tp) {
 		return tp.getLongitude().toString()+","+tp.getLatitude().toString();
 	}
 	

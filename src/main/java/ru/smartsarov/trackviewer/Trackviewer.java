@@ -49,7 +49,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
+import ru.samrtsarov.yandexgeo.GetGeo;
 import ru.smartsarov.trackviewer.JsonTrack.JsonTrack;
 import ru.smartsarov.trackviewer.JsonTrack.ReportForVehicle;
 import ru.smartsarov.trackviewer.JsonTrack.Segment;
@@ -586,9 +586,16 @@ public class Trackviewer {
 	 */
 	public static String jsonTrackData(long min_ts, long max_ts, String vehicleNumber) 
 							throws ClassNotFoundException, SQLException {
+		
+		JsonTrack jtd = getTrackData(min_ts, max_ts, vehicleNumber);
+		if(jtd.getWaitTrackPoints()!=null) {
+			jtd.getWaitTrackPoints().stream()
+				.forEach(i->i.setAddress(GetGeo.getAdress(PdfGenerator.trackPointToGeo(i.getTrackPoint()))));
+		}
+		
 		return new GsonBuilder()
 			  .excludeFieldsWithoutExposeAnnotation()
-			  .create().toJson(getTrackData(min_ts, max_ts, vehicleNumber));  
+			  .create().toJson(jtd);  
 	}
 	
 	/**

@@ -12,6 +12,16 @@ public class WaitTrackPoint {
     @Expose
     private int waiting;
 	
+	@SerializedName("address")
+    @Expose
+	private String address;
+	
+	public String getAddress() {
+		return address;
+	}
+	public void setAddress(String address) {
+		this.address = address;
+	}
 	public TrackPoint getTrackPoint() {
 		return trackPoint;
 	}
