@@ -19,6 +19,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.itextpdf.text.DocumentException;
 
 @Path("/")
@@ -119,7 +120,9 @@ public class TrackviewerService
 			} catch (ClassNotFoundException | IOException | SQLException e) {
 				// TODO Auto-generated catch block
 				return Response.status(Response.Status.OK).entity(e.toString()).build();
-			}
+			}catch(JsonSyntaxException e) {
+				return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(Trackviewer.getJsonMessage(e.toString())).build();
+			} 
 	}
 	
 
@@ -134,7 +137,7 @@ public class TrackviewerService
 				return Response.status(Response.Status.OK).entity(Trackviewer.getWeekReportByType(ts, type)).build();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			return Response.status(Response.Status.OK).entity(e.toString()).build();
+			return Response.status(Response.Status.OK).entity( Trackviewer.getJsonMessage(e.toString())).build();
 		}
     }
 	

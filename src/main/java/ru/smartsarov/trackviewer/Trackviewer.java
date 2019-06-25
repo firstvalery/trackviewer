@@ -30,6 +30,7 @@ import com.google.gson.reflect.TypeToken;
 import com.itextpdf.text.DocumentException;
 import com.sendpulse.restapi.Sendpulse;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
@@ -325,22 +326,29 @@ public class Trackviewer {
 	 * @throws ClassNotFoundException 
 	 */	
 	public static String InsertJsonInto(String jsonData) throws  SQLException, IOException, ClassNotFoundException {	
-		try/*(FileWriter writer = new FileWriter("C:/conf/trackviewer/log.txt", true))*/
-			{
-			/*writer.write(jsonData);
-			writer.append('\n');
-			writer.flush();*/
-			
+		try{	
 			List<JsonInsert>jiList = new Gson().fromJson(jsonData, new TypeToken<List<JsonInsert>>(){}.getType()); 
 			int rc = InsertListInto(jiList);
-			return getJsonMessage("Was received records: "+String.valueOf(rc));
+			if(Props.get().getProperty("logging","false").equals("true")) {
+				writeLog(Instant.now().toString() + " Принято: \n" + jsonData + "\n добавлено записей: "+ rc);
+			}
+			return getJsonMessage("Was received records: "+ String.valueOf(rc));
 		}catch(JsonSyntaxException e) {
-			System.out.println(e.toString()+"  "+Instant.now().toString());
-			return getJsonMessage("Json syntax error! 0 records was added!");
-		}/*catch(IOException ex){
-            System.out.println(ex.getMessage());
-            return getJsonMessage("Internal error! 0 records was added!");
-        } */
+			if(Props.get().getProperty("logging","false").equals("true")) {
+				writeLog(Instant.now().toString() + e.toString());
+			}
+			throw e;
+		}
+	}
+	
+	public static void writeLog(String str) {
+		try(FileWriter writer = new FileWriter(Props.get().getProperty("log.file","C:/conf/trackviewer/log.txt"), true)) {
+			writer.write(str);
+			writer.append('\n');
+			writer.flush();
+		} catch (IOException e) {
+			System.err.println(e.getMessage());
+		}
 	}
 
 	/**
