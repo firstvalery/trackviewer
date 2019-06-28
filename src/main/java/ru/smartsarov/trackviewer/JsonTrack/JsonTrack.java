@@ -11,9 +11,12 @@ public class JsonTrack {
 	@SerializedName("vehicle")
     @Expose
     private Vehicle vehicle;
+/*    @SerializedName("distance")
+    @Expose*/
+    private Integer distance;
     @SerializedName("distance")
     @Expose
-    private Integer distance;
+    private Float distanceKm;
     @SerializedName("segments")
     @Expose
     private List<Segment> segments = null;
@@ -24,7 +27,16 @@ public class JsonTrack {
     private long tsFrom;
     private long tsTo;
     
-    public Vehicle getVehicle() {
+    
+    public Float getDistanceKm() {
+		return distanceKm;
+	}
+
+	public void setDistanceKm(Float distanceKm) {
+		this.distanceKm = distanceKm;
+	}
+
+	public Vehicle getVehicle() {
         return vehicle;
     }
 

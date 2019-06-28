@@ -6,11 +6,17 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 public class Segment {
-
+	
+    @SerializedName("duration")
+    @Expose
+	private Long duration;
+    
+    private Integer distance;
+    
     @SerializedName("distance")
     @Expose
-    private Integer distance;
-    @SerializedName("average")
+    private Float distanceKm;
+   	@SerializedName("average")
     @Expose
     private float avarage;
     @SerializedName("waiting")
@@ -22,8 +28,49 @@ public class Segment {
 	@SerializedName("trackPoints")
     @Expose
     private List<TrackPoint> trackPoints = null;
+	
+	@SerializedName("tsFrom")
+    @Expose
+	private long tsFrom;
+	
+	@SerializedName("tsTo")
+    @Expose
+	private long tsTo;
+	
+	
+	 public Long getDuration() {
+		return duration;
+	}
 
-    public Integer getDistance() {
+	public void setDuration(Long duration) {
+		this.duration = duration;
+	}
+
+	public Float getDistanceKm() {
+		return distanceKm;
+	}
+
+	public void setDistanceKm(Float distanceKm) {
+		this.distanceKm = distanceKm;
+	}
+
+	public long getTsFrom() {
+		return tsFrom;
+	}
+
+	public void setTsFrom(long tsFrom) {
+		this.tsFrom = tsFrom;
+	}
+
+	public long getTsTo() {
+		return tsTo;
+	}
+
+	public void setTsTo(long tsTo) {
+		this.tsTo = tsTo;
+	}
+
+	public Integer getDistance() {
         return distance;
     }
 

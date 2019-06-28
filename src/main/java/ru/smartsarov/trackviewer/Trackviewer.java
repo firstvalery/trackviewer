@@ -538,7 +538,6 @@ public class Trackviewer {
 
 	    	   //filtering unreal points 
 	         	if (i > 0) {
-
 	         			tmpOdometer = getDistance(tmpPt, pt);		
 		         		if(delta<=0 || tmpOdometer/delta > filterVelocity) {
 		         			continue; // skip iteration
@@ -553,9 +552,9 @@ public class Trackviewer {
 	         		odometer += tmpOdometer;
 	         		pt.setOdometer(Double.valueOf(odometer));
 	         	}
-	         	
 	         	//creating new segment
 	         	if(delta > waitPointDuration){//suspense time constant        		
+	         		
 	         		segmentIndex++;     			
 	         		jt.getSegments().add(new Segment());//new segment building
 	         		jt.getSegments().get(segmentIndex-1).setTrackPoints(new ArrayList<TrackPoint>());//new point list in it  	
@@ -573,15 +572,22 @@ public class Trackviewer {
 		   Double distance = 0.0;
 		   distance = seg.getTrackPoints().get(seg.getTrackPoints().size()-1).getOdometer() - seg.getTrackPoints().get(0).getOdometer();
 		   seg.setDistance(Double.valueOf(distance).intValue());
+		   seg.setDistanceKm(Math.round(distance.floatValue()/1000F*1000)/1000F);
 		   
 		   if (seg.getTrackPoints().size()>1) {
 			   float time = seg.getTrackPoints().get(seg.getTrackPoints().size()-1).getTimestamp()-seg.getTrackPoints().get(0).getTimestamp();
-			   seg.setAvaerage(distance.floatValue()/time*3.6F);
+			   seg.setAvaerage(Math.round(distance.floatValue()/time*3.6F*10)/10.0F);
 		   }else seg.setAvaerage(0.0F);   
 	   });
    
 	   jt.setDistance(Double.valueOf(jt.getSegments().get(jt.getSegments().size()-1).getTrackPoints().get(jt.getSegments().get(jt.getSegments().size()-1).getTrackPoints().size()-1).getOdometer()-
 			   			jt.getSegments().get(0).getTrackPoints().get(0).getOdometer()).intValue());
+	   jt.setDistanceKm((jt.getDistance()/100)/10F);
+	   
+	   jt.getSegments().forEach(i->{i.setTsFrom(i.getTrackPoints().stream().mapToLong(j->j.getTimestamp()).min().getAsLong());
+	   								i.setTsTo(i.getTrackPoints().stream().mapToLong(j->j.getTimestamp()).max().getAsLong()); 
+	   								i.setDuration(i.getTsTo() - i.getTsFrom());
+	   								});
 	   
 	  return jt;  		
 	}
