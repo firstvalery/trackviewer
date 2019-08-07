@@ -974,15 +974,10 @@ public class Trackviewer {
 																));						        						
 						        						return rfv;
 						        					}).collect(Collectors.toList());
-						        		})
-						        	.sorted(new Comparator<List<ReportForVehicle>>(){
-										@Override
-										public int compare(List<ReportForVehicle> a, List<ReportForVehicle> b) {
-												if (a.get(0).getTsFrom() < b.get(0).getTsFrom()) return -1;				
-												if (a.get(0).getTsFrom() > b.get(0).getTsFrom()) return 1;
-												return 0;
-											}
-						        		})
+						        		}).sorted((a,b)-> {
+						        			if (a.get(0).getTsFrom() < b.get(0).getTsFrom()) return -1;				
+											if (a.get(0).getTsFrom() > b.get(0).getTsFrom()) return 1;
+											return 0;})
 						        	.collect(Collectors.toList());
 						        	
 				//определим и заполним недостающие часовые отчеты пустыми 
