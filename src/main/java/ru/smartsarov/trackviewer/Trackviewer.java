@@ -464,8 +464,12 @@ public class Trackviewer {
 														result.get(0).getValue(VEHICLE_DATA.DESCRIPTION)));
 			jt.setTsFrom(result.get(0).getValue(TRACKING_DATA.TIMESTAMP).getTime()/1000);
 			jt.setTsTo(result.get(result.size()-1).getValue(TRACKING_DATA.TIMESTAMP).getTime()/1000);
-			//TODO пересмотреть принцип формирования флага одометра
-			odometerFlag = result.get(0).getValue(TRACKING_DATA.ODOMETER)!=null;
+			
+			// флаг одометра		
+			odometerFlag = !result.stream()
+							.filter(rs->rs.get(TRACKING_DATA.ODOMETER)==null)
+							.findFirst()
+							.isPresent();
 		}else { 
 			jt.setVehicle(new Vehicle());
 			return jt;
