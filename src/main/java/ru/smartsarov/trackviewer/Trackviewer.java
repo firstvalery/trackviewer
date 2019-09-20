@@ -113,14 +113,15 @@ public class Trackviewer {
 	
 	
 	/**
-	 *Получим из таблицы TrackingData последнюю запись. Если данные не приходят в течение 15 минут, то вызывает
+	 *Получим из таблицы VEHICLE_DATA время последней запись. Если данные не приходят в течение 15 минут, то вызывает
 	 *метод для отправки сообщения по почте 
 	 */
 	public static void checkForBreath() {
 		try (Connection conn = getConnection()) {
 	        DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);  
-	        Record1<Timestamp> res = dsl.select(DSL.max(TRACKING_DATA.TIMESTAMP))
-	         	.from(TRACKING_DATA)
+	        Record1<Timestamp> res = dsl.select(DSL.max(VEHICLE_DATA.LAST_TS))
+	         	.from(VEHICLE_DATA)
+	         	.where(VEHICLE_DATA.ID.lessThan(3018))//3018 - начальное значение id машин, данные по которым идут с нового сервера
 	         	.fetchOne();
 	        
 	        //получим время последней метки времени
@@ -186,12 +187,8 @@ public class Trackviewer {
 							j.getValue().get(0).getVehicle().getModel(),
 							j.getValue().get(0).getVehicle().getDescription(),
 							//налету ищем максимальную метку времени для данной машины в пришедшем пакете
-							new Timestamp(j.getValue().stream().max(new Comparator<JsonInsert>() {
-								@Override
-								public int compare(JsonInsert a, JsonInsert b) {
-									return a.getTime().compareTo(b.getTime());
-								}
-							}).get().getTime()*1000)) ;
+							new Timestamp(j.getValue().stream().max(
+										(a, b) ->  a.getTime().compareTo(b.getTime())).get().getTime()*1000)) ;
 				    })
 				  .collect(Collectors.toSet());
 		
