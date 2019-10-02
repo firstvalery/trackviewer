@@ -14,6 +14,7 @@ import javax.annotation.Generated;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Schema;
@@ -23,6 +24,7 @@ import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 
+import ru.smartsarov.trackviewer.postgres.Indexes;
 import ru.smartsarov.trackviewer.postgres.Keys;
 import ru.smartsarov.trackviewer.postgres.Public;
 import ru.smartsarov.trackviewer.postgres.tables.records.TrackingDataRecord;
@@ -41,7 +43,7 @@ import ru.smartsarov.trackviewer.postgres.tables.records.TrackingDataRecord;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class TrackingData extends TableImpl<TrackingDataRecord> {
 
-    private static final long serialVersionUID = 1422064398;
+    private static final long serialVersionUID = 1324659717;
 
     /**
      * The reference instance of <code>public.tracking_data</code>
@@ -140,6 +142,14 @@ public class TrackingData extends TableImpl<TrackingDataRecord> {
     @Override
     public Schema getSchema() {
         return Public.PUBLIC;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.<Index>asList(Indexes.LOG_FOREIGN_KEY, Indexes.REGION_FKEY, Indexes.TRACKING_DATA_PKEY, Indexes.TRANSPORT_ID_IDX);
     }
 
     /**

@@ -16,9 +16,9 @@ import org.jooq.SQLDialect;
 
 
 import org.jooq.Record1;
-import org.jooq.Record11;
 import org.jooq.Record12;
-import org.jooq.Record15;
+import org.jooq.Record13;
+import org.jooq.Record16;
 import org.jooq.impl.DSL;
 
 import com.esri.core.geometry.GeometryEngine;
@@ -43,7 +43,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -188,7 +187,9 @@ public class Trackviewer {
 							j.getValue().get(0).getVehicle().getDescription(),
 							//налету ищем максимальную метку времени для данной машины в пришедшем пакете
 							new Timestamp(j.getValue().stream().max(
-										(a, b) ->  a.getTime().compareTo(b.getTime())).get().getTime()*1000)) ;
+										(a, b) ->  a.getTime().compareTo(b.getTime())).get().getTime()*1000),
+							j.getValue().get(0).getVehicle().getRnum()
+							);
 				    })
 				  .collect(Collectors.toSet());
 		
@@ -258,6 +259,7 @@ public class Trackviewer {
 				    			.set(VEHICLE_DATA.TYPE, j.getType())
 				    			.set(VEHICLE_DATA.UID, j.getUid())
 				    			.set(VEHICLE_DATA.DESCRIPTION, j.getDescription())
+				    			.set(VEHICLE_DATA.RNUM, j.getRnum())
 				    			.set(VEHICLE_DATA.LAST_TS, new Timestamp (Math.max(j.getLastTs().getTime(), 
 				    					vehTsMap.get(j.getNumber())==null?0L:vehTsMap.get(j.getNumber()).getTime())))
 				    			.where(VEHICLE_DATA.NUMBER.equal(j.getNumber()))
@@ -366,7 +368,8 @@ public class Trackviewer {
 	        		 VEHICLE_DATA.TYPE,
 	        		 VEHICLE_DATA.MODEL,
 	        		 VEHICLE_DATA.DESCRIPTION,
-	        		 VEHICLE_DATA.LAST_TS)
+	        		 VEHICLE_DATA.LAST_TS,
+	        		 VEHICLE_DATA.RNUM)
 	         .from(VEHICLE_DATA)
 	         .fetch()
 	         .stream()
@@ -387,15 +390,13 @@ public class Trackviewer {
 	        			i.get(VEHICLE_DATA.MODEL),
 	        			i.get(VEHICLE_DATA.DESCRIPTION),
 	        			color,
-	        			i.get(VEHICLE_DATA.DESCRIPTION)==null?"":i.get(VEHICLE_DATA.DESCRIPTION).replaceAll("\\D+",""),
+	        			i.get(VEHICLE_DATA.RNUM),
 	        			ts==null?0L:ts.getTime());
-	         }).sorted(new Comparator<VehicleModel>() {
-				@Override
-				public int compare(VehicleModel a, VehicleModel b) {
+	         }).sorted((a, b) ->{
 					if(a.getNumber()==null||b.getNumber()==null) return 0;
 					return a.getNumber().compareTo(b.getNumber());
 				}	 
-	         })
+	         )
 	         .collect(Collectors.toList());
 			
 			 List<VehicleModel> active= allVehicles.stream()
@@ -427,7 +428,8 @@ public class Trackviewer {
 	         					  		VEHICLE_DATA.OWNER,
 	         					  		VEHICLE_DATA.TYPE,
 	         					  		VEHICLE_DATA.MODEL,
-	         					  		VEHICLE_DATA.DESCRIPTION)
+	         					  		VEHICLE_DATA.DESCRIPTION,
+	         					  		VEHICLE_DATA.RNUM)
 			         							.from(TRACKING_DATA)
 			         							.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(TRACKING_DATA.VEHICLE_UID))
 			         							.where(TRACKING_DATA.TIMESTAMP.between(new Timestamp(min_ts*1000), new Timestamp(max_ts*1000))
@@ -442,7 +444,7 @@ public class Trackviewer {
 	 * Returns JsonTrack Object for the vehicle result 
 	 * 
 	 */
-	private static JsonTrack dataAnalasing(List<Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String>> result) {
+	private static JsonTrack dataAnalasing(List<Record13<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String, String>> result) {
 		JsonTrack jt = new JsonTrack();
 
 		jt.setSegments(new ArrayList<Segment>());
@@ -458,7 +460,8 @@ public class Trackviewer {
 											result.get(0).getValue(VEHICLE_DATA.NUMBER),
 												result.get(0).getValue(VEHICLE_DATA.OWNER),
 													result.get(0).getValue(VEHICLE_DATA.MODEL),
-														result.get(0).getValue(VEHICLE_DATA.DESCRIPTION)));
+														result.get(0).getValue(VEHICLE_DATA.DESCRIPTION),
+														result.get(0).getValue(VEHICLE_DATA.RNUM)));
 			jt.setTsFrom(result.get(0).getValue(TRACKING_DATA.TIMESTAMP).getTime()/1000);
 			jt.setTsTo(result.get(result.size()-1).getValue(TRACKING_DATA.TIMESTAMP).getTime()/1000);
 			
@@ -684,35 +687,24 @@ public class Trackviewer {
 						VEHICLE_DATA.OWNER,
 						VEHICLE_DATA.TYPE,
 						VEHICLE_DATA.MODEL,
-						VEHICLE_DATA.DESCRIPTION)
+						VEHICLE_DATA.DESCRIPTION,
+						VEHICLE_DATA.RNUM)
 							.from(TRACKING_DATA)
 							.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(TRACKING_DATA.VEHICLE_UID))
 							.where(TRACKING_DATA.TIMESTAMP
 	        		 		.between(new Timestamp(ts-3600000), new Timestamp(ts)))
 	        		 		.fetch()
 	        		 		.stream()
-	        		 		.collect(Collectors.groupingBy(Record12<Timestamp, Short, BigDecimal, BigDecimal, 
+	        		 		.collect(Collectors.groupingBy(Record13<Timestamp, Short, BigDecimal, BigDecimal, 
 	        		 																	Short, Integer, String, String, 
-	        		 																		String, String, String, String>::value7))       
+	        		 																		String, String, String, String, String>::value7))       
 
 							 .entrySet()
 							 .stream()
 							 .map(s->{return dataAnalasing(s.getValue()
 									  		.stream()
-					  						.sorted(new Comparator<Record12<Timestamp, Short, BigDecimal, BigDecimal, 
-					  															Short, Integer, String, String, 
-					  																String, String, String, String>>(){
-	 											@Override
-	 											public int compare(//compare two records by timestamps
-	 													Record12<Timestamp, Short, BigDecimal, BigDecimal, 
-	 																Short, Integer, String, String, 
-	 																	String, String, String, String> a,
-	 													Record12<Timestamp, Short, BigDecimal, BigDecimal, 
-	 																Short, Integer, String, String, String, 
-	 																	String, String, String> b) {
-	 												return a.value7().compareTo(b.value7());
-	 											}
-					  						}).collect(Collectors.toList()));		 
+					  						.sorted((a,b)->a.value7().compareTo(b.value7())
+).collect(Collectors.toList()));		 
 			 }).collect(Collectors.toList());
 			 
 		//TODO	Требуется рефакторинг  for(JsonTrack jt :jtList)  под Stream API 
@@ -781,6 +773,7 @@ public class Trackviewer {
 			        		 	VEHICLE_DATA.OWNER,
 			        		 	VEHICLE_DATA.MODEL,
 			        		 	VEHICLE_DATA.DESCRIPTION,
+			        		 	VEHICLE_DATA.RNUM,
 			        		    HOUR_REPORT.DISTANCE,
 			        		    HOUR_REPORT.DRIVING,
 			        		    HOUR_REPORT.WAITING,
@@ -798,8 +791,8 @@ public class Trackviewer {
 			         				.fetch()
 			         				.stream()
 
-			         				.collect(Collectors.groupingBy(Record15<Timestamp, String, String, String, 
-			         																String, String, String, Integer, 
+			         				.collect(Collectors.groupingBy(Record16<Timestamp, String, String, String, 
+			         																String, String, String, String, Integer, 
 			         																	Integer, Integer, Float, BigDecimal, 
 			         																		BigDecimal, Timestamp, Integer>::value1))
 		        						.entrySet()
@@ -807,8 +800,8 @@ public class Trackviewer {
 		        						.map(t->{				
 				         					return t.getValue()
 				         					.stream()
-											.collect(Collectors.groupingBy(Record15<Timestamp, String, String, String,//маппируем по номеру ТС
-																						String, String, String, Integer, 
+											.collect(Collectors.groupingBy(Record16<Timestamp, String, String, String,//маппируем по номеру ТС
+																						String, String, String,String, Integer, 
 																							Integer, Integer, Float, BigDecimal, 
 																								BigDecimal, Timestamp, Integer>::value2))
 											.entrySet()
@@ -830,22 +823,19 @@ public class Trackviewer {
 																										s.getValue(WAIT_POINTS.WAITING));
 																					return wtp;		
 																})
-														 .sorted(new Comparator<WaitTrackPoint>() {
-
-															@Override
-															public int compare(WaitTrackPoint a, WaitTrackPoint b) {
+														 .sorted((a, b)-> {
 																if(a==null&b!=null)return -1;
 																else if(a!=null&b==null)return 1;
 																else if(a==null && b==null) return 0;
 																if (a.getTrackPoint().getTimestamp()>b.getTrackPoint().getTimestamp())return 1;
 																if (a.getTrackPoint().getTimestamp()<b.getTrackPoint().getTimestamp())return -1;
 																return 0;	
-															}})
+															})
 													.collect(Collectors.toList());
 														rfv.setWaitTrackPoints(wptList.contains(null)?null:wptList);
 														
-														Record15<Timestamp, String, String, String, 
-															String, String, String, Integer, 
+														Record16<Timestamp, String, String, String, 
+															String, String, String,String, Integer, 
 																Integer, Integer, Float, BigDecimal, 
 																	BigDecimal, Timestamp, Integer> tmpRec = p.getValue().get(0);
 														
@@ -857,7 +847,8 @@ public class Trackviewer {
 																					tmpRec.getValue(VEHICLE_DATA.NUMBER),
 																					tmpRec.getValue(VEHICLE_DATA.OWNER),
 																					tmpRec.getValue(VEHICLE_DATA.MODEL),
-																					tmpRec.getValue(VEHICLE_DATA.DESCRIPTION)
+																					tmpRec.getValue(VEHICLE_DATA.DESCRIPTION),
+																					tmpRec.getValue(VEHICLE_DATA.RNUM)
 																				));
 														rfv.setTotalDriving(tmpRec.getValue(HOUR_REPORT.DRIVING));
 														rfv.setTotalWaiting(tmpRec.getValue(HOUR_REPORT.WAITING));
@@ -865,14 +856,12 @@ public class Trackviewer {
 													})
 											.collect(Collectors.toList());								
 				         				})
-				         				.sorted(new Comparator<List<ReportForVehicle>>(){
-											@Override
-											public int compare(List<ReportForVehicle> a, List<ReportForVehicle> b) {
+				         				.sorted((a, b) -> {
 													if (a.get(0).getTsFrom() < b.get(0).getTsFrom()) return -1;				
 													if (a.get(0).getTsFrom() > b.get(0).getTsFrom()) return 1;
 													return 0;
 											}
-				         				}).collect(Collectors.toList());
+				         				).collect(Collectors.toList());
 			        
 		        //определим и заполним недостающие часовые отчеты пустыми 
 		        //объектами для соблюдения ранее принятого соглашения по  JSON 
@@ -911,6 +900,7 @@ public class Trackviewer {
 			        		 	VEHICLE_DATA.OWNER,
 			        		 	VEHICLE_DATA.MODEL,
 			        		 	VEHICLE_DATA.DESCRIPTION,
+			        		 	VEHICLE_DATA.RNUM,
 			        		    HOUR_REPORT.DISTANCE,
 			        		    HOUR_REPORT.DRIVING,
 			        		    HOUR_REPORT.WAITING,
@@ -932,16 +922,16 @@ public class Trackviewer {
 									        	 t.setValue(HOUR_REPORT.TS, new Timestamp(tmpTime.toEpochSecond()*1000));
 									        	 return t; 
 									     })//группируем по дням
-									.collect(Collectors.groupingBy(Record11<Timestamp, String, String, String, 
-									        		 									String, String, String, Integer, 
+									.collect(Collectors.groupingBy(Record12<Timestamp, String, String, String, 
+									        		 									String, String, String, String,  Integer, 
 									        		 										Integer, Integer, Float>::value1))
 									.entrySet()
 						        	.stream()
 						        	.map(p->{
 						        			return p.getValue()
 						        					.stream()//группируем по номерам ТС
-						        					.collect(Collectors.groupingBy(Record11<Timestamp, String, String, String, 
-									        		 									String, String, String, Integer, 
+						        					.collect(Collectors.groupingBy(Record12<Timestamp, String, String, String, 
+									        		 									String, String, String, String, Integer, 
 									        		 										Integer, Integer, Float>::value2))
 						        					.entrySet()
 						        					.stream()
@@ -960,8 +950,8 @@ public class Trackviewer {
 								        								.stream()
 								        								.map(q->q.getValue(HOUR_REPORT.WAITING))
 								        								.reduce((x,y)->x + y).get());
-						        						 Record11<Timestamp, String, String, String, 
-						        						 				String, String, String, Integer, 
+						        						 Record12<Timestamp, String, String, String, 
+						        						 				String, String, String, String, Integer, 
 						        						 					Integer, Integer, Float> tmpRec = s.getValue().get(0);
 														
 														rfv.setTsFrom(tmpRec.getValue(HOUR_REPORT.TS).getTime()/1000);
@@ -971,7 +961,8 @@ public class Trackviewer {
 																					tmpRec.getValue(VEHICLE_DATA.NUMBER),
 																					tmpRec.getValue(VEHICLE_DATA.OWNER),
 																					tmpRec.getValue(VEHICLE_DATA.MODEL),
-																					tmpRec.getValue(VEHICLE_DATA.DESCRIPTION)
+																					tmpRec.getValue(VEHICLE_DATA.DESCRIPTION),
+																					tmpRec.getValue(VEHICLE_DATA.RNUM)
 																));						        						
 						        						return rfv;
 						        					}).collect(Collectors.toList());
@@ -1046,7 +1037,11 @@ public class Trackviewer {
 	 */
 	public static void createSpecificPdfReport(long ts_min, long ts_max, String number, OutputStream output)
 													throws ClassNotFoundException, DocumentException, SQLException {
-		PdfGenerator.generateSpecificPdfReport(getTrackData(ts_min, ts_max, number), output);
+		JsonTrack trackData = getTrackData(ts_min, ts_max, number);
+		if(trackData.getTsFrom()==0l&&trackData.getTsTo()==0l) {
+			throw new TrackviewerException("Данные по выбранной машине отсутствуют");
+		}
+		PdfGenerator.generateSpecificPdfReport(trackData, output);
 	}
 	
 	
@@ -1072,7 +1067,8 @@ public class Trackviewer {
 		 							VEHICLE_DATA.OWNER,
 		 							VEHICLE_DATA.TYPE,
 		 							VEHICLE_DATA.MODEL,
-		 							VEHICLE_DATA.DESCRIPTION)
+		 							VEHICLE_DATA.DESCRIPTION,
+		 							VEHICLE_DATA.RNUM)
 		     						.from(TRACKING_DATA)
 		     							.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(TRACKING_DATA.VEHICLE_UID))
 		     							.where(TRACKING_DATA.TIMESTAMP
@@ -1104,7 +1100,8 @@ public class Trackviewer {
 		 							VEHICLE_DATA.OWNER,
 		 							VEHICLE_DATA.TYPE,
 		 							VEHICLE_DATA.MODEL,
-		 							VEHICLE_DATA.DESCRIPTION)
+		 							VEHICLE_DATA.DESCRIPTION,
+		 							VEHICLE_DATA.RNUM)
 		     						.from(TRACKING_DATA)
 		     							.join(VEHICLE_DATA).on(VEHICLE_DATA.ID.eq(TRACKING_DATA.VEHICLE_UID))
 		     							.where(TRACKING_DATA.TIMESTAMP
@@ -1120,31 +1117,22 @@ public class Trackviewer {
 	 * @throws SQLException 
 	 * @throws ClassNotFoundException 
 	 */
-	public static List<ReportForVehicle> buildReportVehicleList(Result<Record12<Timestamp, Short, BigDecimal,
+	public static List<ReportForVehicle> buildReportVehicleList(Result<Record13<Timestamp, Short, BigDecimal,
 																	BigDecimal, Short, Integer, String,
-																		String, String, String, String, String>> result){
+																		String, String, String, String, String, String>> result){
 			return  result
 					.stream()
-    		 		.collect(Collectors.groupingBy(Record12<Timestamp, Short, BigDecimal, BigDecimal, 
-    		 														Short, Integer, String, String, 
-    		 															String, String, String, String>::value7))     
+    		 		.collect(Collectors.groupingBy(rec->rec.value7()))     
 						
 						.entrySet()
 						.stream()
 						.map(p->{
 							return dataAnalasing(p.getValue()
 	         								.stream()
-	         								.sorted(new Comparator<Record12<Timestamp, Short, BigDecimal, BigDecimal, 
-				        		 														Short, Integer, String, String, 
-				        		 															String, String, String, String>>(){
-																				
-																@Override
-																public int compare(
-																	Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> a,
-																	Record12<Timestamp, Short, BigDecimal, BigDecimal, Short, Integer, String, String, String, String, String, String> b) {
-																	return a.value1().compareTo(b.value1());
-																}
-							}).collect(Collectors.toList()));
+	         								.sorted((a,b) ->{
+												return a.value1().compareTo(b.value1());
+												}
+	         						).collect(Collectors.toList()));
 						})
 						.map(q->{
 							ReportForVehicle rfv = new ReportForVehicle(null, 0, null);

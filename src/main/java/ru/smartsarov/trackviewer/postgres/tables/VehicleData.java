@@ -13,6 +13,7 @@ import javax.annotation.Generated;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Schema;
@@ -22,6 +23,7 @@ import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 
+import ru.smartsarov.trackviewer.postgres.Indexes;
 import ru.smartsarov.trackviewer.postgres.Keys;
 import ru.smartsarov.trackviewer.postgres.Public;
 import ru.smartsarov.trackviewer.postgres.tables.records.VehicleDataRecord;
@@ -40,7 +42,7 @@ import ru.smartsarov.trackviewer.postgres.tables.records.VehicleDataRecord;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class VehicleData extends TableImpl<VehicleDataRecord> {
 
-    private static final long serialVersionUID = -68211776;
+    private static final long serialVersionUID = -1792641756;
 
     /**
      * The reference instance of <code>public.vehicle_data</code>
@@ -96,6 +98,11 @@ public class VehicleData extends TableImpl<VehicleDataRecord> {
     public final TableField<VehicleDataRecord, Timestamp> LAST_TS = createField("last_ts", org.jooq.impl.SQLDataType.TIMESTAMP, this, "");
 
     /**
+     * The column <code>public.vehicle_data.rnum</code>.
+     */
+    public final TableField<VehicleDataRecord, String> RNUM = createField("rnum", org.jooq.impl.SQLDataType.CLOB, this, "");
+
+    /**
      * Create a <code>public.vehicle_data</code> table reference
      */
     public VehicleData() {
@@ -134,6 +141,14 @@ public class VehicleData extends TableImpl<VehicleDataRecord> {
     @Override
     public Schema getSchema() {
         return Public.PUBLIC;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.<Index>asList(Indexes.VEHICLE_DAT_PKEY);
     }
 
     /**

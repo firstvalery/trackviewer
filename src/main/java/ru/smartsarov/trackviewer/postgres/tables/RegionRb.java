@@ -12,6 +12,7 @@ import javax.annotation.Generated;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Schema;
@@ -21,6 +22,7 @@ import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 
+import ru.smartsarov.trackviewer.postgres.Indexes;
 import ru.smartsarov.trackviewer.postgres.Keys;
 import ru.smartsarov.trackviewer.postgres.Public;
 import ru.smartsarov.trackviewer.postgres.tables.records.RegionRbRecord;
@@ -39,7 +41,7 @@ import ru.smartsarov.trackviewer.postgres.tables.records.RegionRbRecord;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class RegionRb extends TableImpl<RegionRbRecord> {
 
-    private static final long serialVersionUID = -1735413859;
+    private static final long serialVersionUID = 174410553;
 
     /**
      * The reference instance of <code>public.region_rb</code>
@@ -103,6 +105,14 @@ public class RegionRb extends TableImpl<RegionRbRecord> {
     @Override
     public Schema getSchema() {
         return Public.PUBLIC;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.<Index>asList(Indexes.REGION_RB_PKEY);
     }
 
     /**
