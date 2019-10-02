@@ -14,6 +14,7 @@ import javax.annotation.Generated;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
 import org.jooq.Schema;
@@ -23,6 +24,7 @@ import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 
+import ru.smartsarov.trackviewer.postgres.Indexes;
 import ru.smartsarov.trackviewer.postgres.Keys;
 import ru.smartsarov.trackviewer.postgres.Public;
 import ru.smartsarov.trackviewer.postgres.tables.records.WaitPointsRecord;
@@ -41,7 +43,7 @@ import ru.smartsarov.trackviewer.postgres.tables.records.WaitPointsRecord;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class WaitPoints extends TableImpl<WaitPointsRecord> {
 
-    private static final long serialVersionUID = 935993937;
+    private static final long serialVersionUID = -74640281;
 
     /**
      * The reference instance of <code>public.wait_points</code>
@@ -125,6 +127,14 @@ public class WaitPoints extends TableImpl<WaitPointsRecord> {
     @Override
     public Schema getSchema() {
         return Public.PUBLIC;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.<Index>asList(Indexes.WAIT_POINTS_PKEY);
     }
 
     /**

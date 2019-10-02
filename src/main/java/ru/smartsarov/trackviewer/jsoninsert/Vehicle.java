@@ -6,81 +6,95 @@ import com.google.gson.annotations.SerializedName;
 
 public class Vehicle {
 
-    @SerializedName("type")
-    @Expose
-    private String type;
-    @SerializedName("uid")
-    @Expose
-    private String uid;
-    @SerializedName("number")
-    @Expose
-    private String number;
-    @SerializedName("owner")
-    @Expose
-    private String owner;
-    @SerializedName("model")
-    @Expose
-    private String model;
-    @SerializedName("description")
-    @Expose
-    private String description;
+	@SerializedName("type")
+	@Expose
+	private String type;
+	@SerializedName("uid")
+	@Expose
+	private String uid;
+	@SerializedName("number")
+	@Expose
+	private String number;
+	@SerializedName("owner")
+	@Expose
+	private String owner;
+	@SerializedName("model")
+	@Expose
+	private String model;
+	@SerializedName("description")
+	@Expose
+	private String description;
+	@SerializedName("rnum")
+	@Expose
+	private String rnum;
 
-    public String getType() {
-        return type;
-    }
+	public String getRnum() {
+		return rnum;
+	}
 
-    public void setType(String type) {
-        this.type = type;
-    }
+	public void setRnum(String rnum) {
+		this.rnum = rnum;
+	}
 
-    public String getUid() {
-        return uid;
-    }
+	public String getType() {
+		return type;
+	}
 
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
+	public void setType(String type) {
+		this.type = type;
+	}
 
-    public String getNumber() {
-        return number;
-    }
+	public String getUid() {
+		return uid;
+	}
 
-    public void setNumber(String number) {
-        this.number = number;
-    }
+	public void setUid(String uid) {
+		this.uid = uid;
+	}
 
-    public String getOwner() {
-        return owner;
-    }
+	public String getNumber() {
+		return number;
+	}
 
-    public void setOwner(String owner) {
-        this.owner = owner;
-    }
+	public void setNumber(String number) {
+		this.number = number;
+	}
 
-    public String getModel() {
-        return model;
-    }
+	public String getOwner() {
+		return owner;
+	}
 
-    public void setModel(String model) {
-        this.model = model;
-    }
+	public void setOwner(String owner) {
+		this.owner = owner;
+	}
 
-    public String getDescription() {
-        return description;
-    }
+	public String getModel() {
+		return model;
+	}
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+	public void setModel(String model) {
+		this.model = model;
+	}
 
-	public Vehicle(String type, String uid, String number, String owner, String model, String description) {
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public Vehicle(String type, String uid, String number, String owner, String model, String description,
+			String rnum) {
 		this.type = type;
 		this.uid = uid;
 		this.number = number;
 		this.owner = owner;
 		this.model = model;
 		this.description = description;
+		this.rnum = rnum;
 	}
+
 	public Vehicle() {
 		this.type = "";
 		this.uid = "";
@@ -88,6 +102,7 @@ public class Vehicle {
 		this.owner = "";
 		this.model = "";
 		this.description = "";
+		this.rnum ="";
 	}
 
 }
