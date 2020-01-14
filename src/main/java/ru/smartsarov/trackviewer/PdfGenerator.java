@@ -89,7 +89,13 @@ public class PdfGenerator {
         addTableCommonPdfReportRows(rfvList, table, basicFont);
         table.setSpacingBefore(50f);
         document.add(table);
-
+        
+        float total = rfvList.stream().map(r->r.getDistance()).reduce((x,y)->x+y).orElse(0)/1000.0F;
+        paragraph.clear();
+        paragraph.setSpacingBefore(10);
+		paragraph.add(new Phrase(String.format("Общий пробег %.1f км", total), basicFont));
+		document.add(paragraph);
+		
 		document.close();
 	}
 	

@@ -120,7 +120,7 @@ public class Trackviewer {
 	        DSLContext dsl = DSL.using(conn, SQLDialect.POSTGRES_10);  
 	        Record1<Timestamp> res = dsl.select(DSL.max(VEHICLE_DATA.LAST_TS))
 	         	.from(VEHICLE_DATA)
-	         	.where(VEHICLE_DATA.ID.lessThan(3018))//3018 - начальное значение id машин, данные по которым идут с нового сервера
+	         	.where(VEHICLE_DATA.ID.greaterOrEqual(3018))//3018 - начальное значение id машин, данные по которым идут с нового сервера
 	         	.fetchOne();
 	        
 	        //получим время последней метки времени
