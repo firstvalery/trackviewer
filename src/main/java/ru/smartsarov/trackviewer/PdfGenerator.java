@@ -124,7 +124,7 @@ public class PdfGenerator {
 					PdfPCell cell = new PdfPCell();
 					
 					//Гос номер
-					cell.setPhrase(new Phrase(rfv.getVehicle().getNumber(), font));
+					cell.setPhrase(new Phrase(rfv.getVehicle().getNumber()!=null?rfv.getVehicle().getNumber().toUpperCase():"", font));
 					table.addCell(cell);
 					
 					//Дата и время
